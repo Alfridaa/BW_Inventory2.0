@@ -175,6 +175,69 @@ class Database:
         );""")
         self.conn.commit()
 
+    def _validate_table_name(self, table_name: str):
+        if not re.fullmatch(r"\w+", table_name):
+            raise ValueError("Ungültiger Tabellenname")
+
+    def fetch_vehicle_set_rows(self, table_name: str) -> list[sqlite3.Row]:
+        assert self.conn is not None
+        self._validate_table_name(table_name)
+        cur = self.conn.cursor()
+        cur.execute(
+            f"SELECT rowid, product_type, property_1, property_2, count FROM {table_name} "
+            "ORDER BY product_type, property_1, property_2"
+        )
+        return cur.fetchall()
+
+    def insert_vehicle_set_row(self, table_name: str, product_type: str, property_1: str, property_2: str, count: int):
+        assert self.conn is not None
+        self._validate_table_name(table_name)
+        self.conn.execute(
+            f"INSERT INTO {table_name} (product_type, property_1, property_2, count) VALUES (?, ?, ?, ?)",
+            (product_type, property_1, property_2, count),
+        )
+        self.conn.commit()
+
+    def update_vehicle_set_row_count(self, table_name: str, row_id: int, count: int):
+        assert self.conn is not None
+        self._validate_table_name(table_name)
+        self.conn.execute(f"UPDATE {table_name} SET count = ? WHERE rowid = ?", (count, row_id))
+        self.conn.commit()
+
+    def get_inventory_product_types(self) -> list[str]:
+        return self.get_distinct_values("inventory", "product_type")
+
+    def get_inventory_property1_for_type(self, product_type: str) -> list[str]:
+        assert self.conn is not None
+        cur = self.conn.cursor()
+        cur.execute(
+            """
+            SELECT DISTINCT property_1
+            FROM inventory
+            WHERE product_type = ? AND property_1 IS NOT NULL AND property_1 <> ''
+            ORDER BY property_1
+            """,
+            (product_type,),
+        )
+        return [row[0] for row in cur.fetchall()]
+
+    def get_inventory_property2_for_type_and_property1(self, product_type: str, property_1: str) -> list[str]:
+        assert self.conn is not None
+        cur = self.conn.cursor()
+        cur.execute(
+            """
+            SELECT DISTINCT property_2
+            FROM inventory
+            WHERE product_type = ?
+              AND property_1 = ?
+              AND property_2 IS NOT NULL
+              AND property_2 <> ''
+            ORDER BY property_2
+            """,
+            (product_type, property_1),
+        )
+        return [row[0] for row in cur.fetchall()]
+
     def commit(self):
         assert self.conn is not None
         self.conn.commit()
