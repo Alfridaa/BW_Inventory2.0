@@ -51,7 +51,7 @@ class AddInventoryDialog(tk.Toplevel):
         self.transient(master)
         self.grab_set()
 
-        self.inputs = {}
+        self.inputs: dict[str, ttk.Combobox | dict[str, tk.IntVar]] = {}
         form = ttk.Frame(self)
         form.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
@@ -60,7 +60,7 @@ class AddInventoryDialog(tk.Toplevel):
             if col == "ID":
                 continue
             ttk.Label(form, text=f"{col}").grid(row=row, column=0, sticky="w", pady=3)
-            dd = ttk.Combobox(form, state="readonly")
+            dd = ttk.Combobox(form, state="normal")
             try:
                 dd_values = self.db.get_distinct_values("inventory", col)
                 if col == "location":
@@ -68,25 +68,22 @@ class AddInventoryDialog(tk.Toplevel):
                 dd["values"] = [""] + dd_values
             except Exception:
                 dd["values"] = [""]
-            dd.grid(row=row, column=1, sticky="we", padx=4)
+            dd.grid(row=row, column=1, columnspan=2, sticky="we", padx=4)
 
-            new_e = ttk.Entry(form)
-            new_e.grid(row=row, column=2, sticky="we", padx=4)
-
-            self.inputs[col] = {"combo": dd, "new": new_e}
+            self.inputs[col] = dd
 
             if col in ("manufactury_date", "check_date"):
-                btn = ttk.Button(form, text="Heute", command=lambda e=new_e: e.delete(0, tk.END) or e.insert(0, today_str()))
+                btn = ttk.Button(form, text="Heute", command=lambda e=dd: e.delete(0, tk.END) or e.insert(0, today_str()))
                 btn.grid(row=row, column=3, padx=4)
 
             row += 1
 
-        self.inputs["check_date"]["new"].insert(0, today_str())
+        self.inputs["check_date"].insert(0, today_str())
 
-        psa_widgets = self.inputs["psa_check"]
-        for w in psa_widgets.values():
-            try: w.grid_forget()
-            except Exception: pass
+        try:
+            self.inputs["psa_check"].grid_forget()
+        except Exception:
+            pass
         var_psa = tk.IntVar(value=0)
         cb = ttk.Checkbutton(form, text="psa_check", variable=var_psa)
         cb.grid(row=row - 1, column=1, sticky="w")
@@ -111,11 +108,7 @@ class AddInventoryDialog(tk.Toplevel):
     def resolve_value(self, col: str):
         if col == "psa_check":
             return 1 if self.inputs[col]["var"].get() else 0
-        pair = self.inputs[col]
-        newv = pair["new"].get().strip()
-        if newv:
-            return newv
-        selected = pair["combo"].get().strip()
+        selected = self.inputs[col].get().strip()
         if col == "location":
             return _location_value_from_display(selected)
         return selected
@@ -172,7 +165,7 @@ class EditInventoryDialog(tk.Toplevel):
         self.geometry("720x520")
         self.transient(master)
         self.grab_set()
-        self.inputs = {}
+        self.inputs: dict[str, ttk.Combobox | dict[str, tk.IntVar]] = {}
         form = ttk.Frame(self)
         form.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
@@ -183,7 +176,7 @@ class EditInventoryDialog(tk.Toplevel):
                 row += 1
                 continue
             ttk.Label(form, text=f"{col}").grid(row=row, column=0, sticky="w", pady=3)
-            dd = ttk.Combobox(form, state="readonly")
+            dd = ttk.Combobox(form, state="normal")
             try:
                 dd_values = self.db.get_distinct_values("inventory", col)
                 if col == "location":
@@ -191,24 +184,23 @@ class EditInventoryDialog(tk.Toplevel):
                 dd["values"] = [""] + dd_values
             except Exception:
                 dd["values"] = [""]
-            dd.grid(row=row, column=1, sticky="we", padx=4)
-
-            new_e = ttk.Entry(form)
-            new_e.grid(row=row, column=2, sticky="we", padx=4)
+            dd.grid(row=row, column=1, columnspan=2, sticky="we", padx=4)
             current_val = record.get(col) if record.get(col) is not None else ""
-            new_e.insert(0, str(current_val))
+            if col == "location":
+                current_val = _format_location_option(str(current_val), self.member_name_by_id)
+            dd.insert(0, str(current_val))
 
-            self.inputs[col] = {"combo": dd, "new": new_e}
+            self.inputs[col] = dd
 
             if col in ("manufactury_date", "check_date"):
-                ttk.Button(form, text="Heute", command=lambda e=new_e: e.delete(0, tk.END) or e.insert(0, today_str())).grid(row=row, column=3, padx=4)
+                ttk.Button(form, text="Heute", command=lambda e=dd: e.delete(0, tk.END) or e.insert(0, today_str())).grid(row=row, column=3, padx=4)
 
             row += 1
 
-        psa_widgets = self.inputs["psa_check"]
-        for w in psa_widgets.values():
-            try: w.grid_forget()
-            except Exception: pass
+        try:
+            self.inputs["psa_check"].grid_forget()
+        except Exception:
+            pass
         var_psa = tk.IntVar(value=1 if str(record.get("psa_check")) == "1" else 0)
         cb = ttk.Checkbutton(form, text="psa_check", variable=var_psa)
         cb.grid(row=row - 1, column=1, sticky="w")
@@ -226,11 +218,7 @@ class EditInventoryDialog(tk.Toplevel):
     def resolve_value(self, col: str):
         if col == "psa_check":
             return 1 if self.inputs[col]["var"].get() else 0
-        pair = self.inputs[col]
-        newv = pair["new"].get().strip()
-        if newv:
-            return newv
-        selected = pair["combo"].get().strip()
+        selected = self.inputs[col].get().strip()
         if col == "location":
             return _location_value_from_display(selected)
         return selected
