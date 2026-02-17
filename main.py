@@ -83,8 +83,10 @@ class App(tk.Tk):
         menubar.add_cascade(label="PSA Soll-Liste", menu=m_psa_soll_liste)
 
         m_print = tk.Menu(menubar, tearoff=0)
-        m_print.add_command(label="Fahrzeuge", command=lambda: self.placeholder_dialog("Drucken Fahrzeuge"))
-        m_print.add_command(label="Einsatzkräfte", command=self.open_print_dialog)
+        m_print.add_command(label="Listen Fahrzeuge", command=lambda: self.placeholder_dialog("Drucken Fahrzeuge"))
+        m_print.add_separator()
+        m_print.add_command(label="Ausgabe Einsatzkräfte", command=self.open_print_dialog)
+        m_print.add_command(label="Rückgabe Einsatzkräfte", command=lambda: self.placeholder_dialog("Drucken Fahrzeuge"))
         menubar.add_cascade(label="Drucken", menu=m_print)
 
         m_settings = tk.Menu(menubar, tearoff=0)
