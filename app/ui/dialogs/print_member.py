@@ -165,7 +165,7 @@ class PrintExportDialog(tk.Toplevel):
                 columns=INVENTORY_EXPORT_COLUMNS,   # nur die 7 gewünschten Spalten
                 rows=rows,                          # Liste[dict] mit genau diesen Keys
                 out_path=out_path,
-                logo_path="bw_logo_large.png",
+                logo_path="settings/BW_LOGO_mit_NBG_bunt.svg",
                 footer_lines=["Erstellt am:", "Ort/Datum              Unterschrift"],
                 width_overrides={
                     "ID": 18,

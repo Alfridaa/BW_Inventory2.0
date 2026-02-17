@@ -23,15 +23,23 @@ class _PDF(FPDF):
         self.logo_path = logo_path
 
     def header(self):
-        # Logo (optional)
-        if self.logo_path and os.path.exists(self.logo_path):
-            # x=250 passt für Querformat A4; zur Not anpassen
-            self.image(self.logo_path, x=250, y=8, w=33)
+        title_y = 8
+        title_h = 10
+
         # Titel
         self.set_font("Arial", "B", 15)
-        self.cell(0, 10, "", 0, 1)  # Leerzeile
-        self.cell(200, 10, self.title_text, 1, 0, "C")
-        self.ln(30)
+        self.set_xy(self.l_margin, title_y)
+        title_w = 205
+        self.cell(title_w, title_h, self.title_text, 1, 0, "C")
+
+        # Logo rechts oben neben dem Titel (optional)
+        if self.logo_path and os.path.exists(self.logo_path):
+            logo_h = title_h + 1  # nur minimal größer als die Überschrift
+            logo_w = 0
+            logo_x = self.l_margin + title_w + 4
+            self.image(self.logo_path, x=logo_x, y=title_y, w=logo_w, h=logo_h)
+
+        self.ln(20)
 
     def footer(self):
         self.set_y(-15)
