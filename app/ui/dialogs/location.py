@@ -37,7 +37,7 @@ class LocationManageDialog(tk.Toplevel):
         self.location_combo.bind("<<ComboboxSelected>>", self._on_location_selected)
         self.location_combo.bind("<FocusOut>", self._on_location_selected)
 
-        ttk.Label(frame, text="Fahrzeug").grid(row=1, column=0, sticky="w")
+        ttk.Label(frame, text="Zusatz").grid(row=1, column=0, sticky="w")
         self.vehicle_combo = ttk.Combobox(frame, textvariable=self.vehicle_var, state="normal", width=36)
         self.vehicle_combo.grid(row=1, column=1, pady=(0, 8), sticky="ew")
 
