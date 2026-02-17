@@ -32,8 +32,8 @@ class App(tk.Tk):
         self.member_tab = MemberTab(self.notebook, self.db)
         self.kleidung_tab = KleidungTab(self.notebook, self.db)
 
-        self.notebook.add(self.inventory_tab, text="Inventory")
-        self.notebook.add(self.member_tab, text="Member")
+        self.notebook.add(self.inventory_tab, text="Material")
+        self.notebook.add(self.member_tab, text="Einsatzkräfte")
         self.notebook.add(self.kleidung_tab, text="Kleidung")
         
 
@@ -59,13 +59,13 @@ class App(tk.Tk):
 
         m_entries = tk.Menu(menubar, tearoff=0)
         m_entries.add_command(label="Material hinzufügen", command=self.menu_add_inventory)
-        m_entries.add_command(label="Member hinzufügen", command=self.menu_add_member)
+        m_entries.add_command(label="Einsatzkräfte hinzufügen", command=self.menu_add_member)
         m_entries.add_command(label="Kleidung hinzufügen", command=self.menu_add_kleidung)
         menubar.add_cascade(label="Einträge", menu=m_entries)
 
         m_psacheck = tk.Menu(menubar, tearoff=0)
         m_psacheck.add_command(label="Fahrzeuge", command=lambda: self.placeholder_dialog("PSA Check Fahrzeuge"))
-        m_psacheck.add_command(label="Member", command=lambda: self.placeholder_dialog("PSA Check Member"))
+        m_psacheck.add_command(label="Einsatzkräfte", command=lambda: self.placeholder_dialog("PSA Check Einsatzkräfte"))
         menubar.add_cascade(label="PSA-Check", menu=m_psacheck)
 
         m_psa_soll_liste = tk.Menu(m_psacheck, tearoff=0)
@@ -78,7 +78,7 @@ class App(tk.Tk):
 
         m_print = tk.Menu(menubar, tearoff=0)
         m_print.add_command(label="Fahrzeuge", command=lambda: self.placeholder_dialog("Drucken Fahrzeuge"))
-        m_print.add_command(label="Member", command=self.open_print_dialog)
+        m_print.add_command(label="Einsatzkräfte", command=self.open_print_dialog)
         menubar.add_cascade(label="Drucken", menu=m_print)
 
         m_settings = tk.Menu(menubar, tearoff=0)
