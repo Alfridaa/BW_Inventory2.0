@@ -274,7 +274,12 @@ class InventoryTab(ttk.Frame):
             last_name = (member.get("last_name") or "").strip()
             full_name = f"{first_name} {last_name}".strip()
             if full_name:
-                member_name_by_id[str(member["ID"])] = full_name
+                member_id = str(member["ID"]).strip()
+                member_name_by_id[member_id] = full_name
+                if member_id.startswith("/"):
+                    member_name_by_id[member_id[1:]] = full_name
+                else:
+                    member_name_by_id[f"/{member_id}"] = full_name
         return member_name_by_id
 
     def format_value(self, col: str, v):
@@ -283,8 +288,9 @@ class InventoryTab(ttk.Frame):
         if col == "location" and v not in (None, ""):
             location = str(v).strip()
             if location.startswith("/NR"):
-                lookup_id = location[1:]
-                member_name = self.member_name_by_id.get(lookup_id)
+                member_name = self.member_name_by_id.get(location)
+                if not member_name:
+                    member_name = self.member_name_by_id.get(location[1:])
                 if member_name:
                     return member_name
         return v if v is not None else ""
