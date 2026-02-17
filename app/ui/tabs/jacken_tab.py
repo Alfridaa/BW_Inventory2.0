@@ -75,8 +75,9 @@ class KleidungTab(ttk.Frame):
     def format_value(self, col: str, v):
         if col == "location" and v not in (None, ""):
             location = str(v).strip()
-            lookup_id = location[1:] if location.startswith("/") else location
-            member_name = self.member_name_by_id.get(lookup_id)
-            if member_name:
-                return member_name
+            if location.startswith("/NR"):
+                lookup_id = location[1:]
+                member_name = self.member_name_by_id.get(lookup_id)
+                if member_name:
+                    return member_name
         return v if v is not None else ""
