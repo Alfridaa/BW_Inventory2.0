@@ -18,6 +18,47 @@ class PlaceholderAbortDialog(tk.Toplevel):
         ttk.Button(frame, text="Abbrechen", command=self.destroy).grid(row=1, column=0)
 
 
+class VehicleCheckDialog(tk.Toplevel):
+    def __init__(self, master, db):
+        super().__init__(master)
+        self.db = db
+
+        self.title("PSA Bedarf Berechnung")
+        self.resizable(False, False)
+        self.transient(master)
+        self.grab_set()
+
+        self.vehicle_var = tk.StringVar()
+
+        frame = ttk.Frame(self, padding=16)
+        frame.grid(row=0, column=0, sticky="nsew")
+
+        ttk.Label(frame, text="Welches Fahrzeug soll geprüft werden?").grid(row=0, column=0, columnspan=2, sticky="w")
+
+        self.vehicle_combo = ttk.Combobox(frame, textvariable=self.vehicle_var, state="readonly", width=30)
+        self.vehicle_combo.grid(row=1, column=0, columnspan=2, pady=(6, 12), sticky="w")
+
+        ttk.Button(frame, text="Prüfen", command=self.open_placeholder_result).grid(row=2, column=0, sticky="w")
+        ttk.Button(frame, text="Abbrechen", command=self.destroy).grid(row=2, column=1, sticky="e")
+
+        self.refresh_vehicle_list()
+
+    def refresh_vehicle_list(self):
+        vehicles = self.db.get_vehicle_locations()
+        self.vehicle_combo["values"] = vehicles
+        if vehicles:
+            self.vehicle_var.set(vehicles[0])
+        else:
+            self.vehicle_var.set("")
+
+    def open_placeholder_result(self):
+        vehicle = self.vehicle_var.get().strip()
+        if not vehicle:
+            messagebox.showinfo("Hinweis", "Es wurde kein Fahrzeug gefunden oder ausgewählt.")
+            return
+        PlaceholderAbortDialog(self, f"Fahrzeug prüfen: {vehicle}", "Wird später implementiert.")
+
+
 class PSASollListDialog(tk.Toplevel):
     def __init__(self, master, db):
         super().__init__(master)

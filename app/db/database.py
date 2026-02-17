@@ -283,6 +283,38 @@ class Database:
         rows = cur.fetchall()
         # In Dicts mappen (dank row_factory geht Name-basiert)
         return [{col: row[col] for col in columns} for row in rows]
+
+    def get_vehicle_locations(self) -> list[str]:
+        """
+        Liest alle Inventory-Location-Einträge und extrahiert Fahrzeugpfade im Format
+        /FAHRZEUG bis zum nächsten Slash.
+        Beispiele:
+        /N84-1 -> /N84-1
+        /N84-1/Seil -> /N84-1
+        """
+        assert self.conn is not None
+        cur = self.conn.cursor()
+        cur.execute(
+            """
+            SELECT DISTINCT location
+            FROM inventory
+            WHERE location IS NOT NULL
+              AND location <> ''
+              AND location LIKE '/%'
+            """
+        )
+        rows = cur.fetchall()
+
+        vehicle_locations: set[str] = set()
+        for row in rows:
+            location = str(row[0]).strip()
+            if not location.startswith("/"):
+                continue
+            vehicle = location.split("/", 2)[1]
+            if vehicle:
+                vehicle_locations.add(f"/{vehicle}")
+
+        return sorted(vehicle_locations)
     
         # ---- PSA ----
     def fetch_all_psa(self) -> list[sqlite3.Row]:
