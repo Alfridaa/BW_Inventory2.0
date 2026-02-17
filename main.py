@@ -1,0 +1,165 @@
+import os
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox
+
+from settings.constants import APP_TITLE
+from settings.app_settings import AppSettings
+from app.db.database import Database
+from app.ui.tabs.inventory_tab import InventoryTab
+from app.ui.tabs.member_tab import MemberTab
+from app.ui.tabs.psa_calc_tab import PSACalcTab
+from app.ui.tabs.jacken_tab import JackenTab
+from app.ui.tabs.rental_tab import RentalTab
+from app.ui.dialogs.color_rules import ColorRulesDialog
+from app.ui.dialogs.about import AboutDialog
+from app.ui.dialogs.print_member import PrintExportDialog
+from app.core.utils import create_folder
+
+class App(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title(APP_TITLE)
+        self.geometry("1450x700")
+
+        self.settings = AppSettings()
+        self.db = Database()
+
+        self.create_menu()
+        self.build_statusbar()
+
+        self.notebook = ttk.Notebook(self)
+        self.notebook.pack(fill=tk.BOTH, expand=True)
+
+        self.inventory_tab = InventoryTab(self.notebook, self.db, self.settings)
+        self.member_tab = MemberTab(self.notebook, self.db)
+        self.psa_calc_tab = PSACalcTab(self.notebook, self.db)
+        self.jacken_tab = JackenTab(self.notebook, self.db)
+        self.rental_tab = RentalTab(self.notebook, self.db)
+
+        self.notebook.add(self.inventory_tab, text="Inventory")
+        self.notebook.add(self.member_tab, text="Member")
+        self.notebook.add(self.psa_calc_tab, text="PSA Bedarf")
+        self.notebook.add(self.jacken_tab, text="Jacken")
+        self.notebook.add(self.rental_tab, text="Verleih")
+        
+
+        if self.settings.last_db_path:
+            try:
+                self.open_db(self.settings.last_db_path)
+                self.status_var.set(f"Zuletzt verwendete Datenbank geöffnet:{self.settings.last_db_path}")
+            except Exception as ex:
+                messagebox.showwarning("Hinweis", f"Konnte letzte DB nicht öffnen: {ex}")
+                self.status_var.set("Zuletzt verwendete DB wurde nicht gefunden. Datei → Öffnen…")
+
+    # -------------------------
+    # Menu
+    # -------------------------
+    def create_menu(self):
+        menubar = tk.Menu(self)
+
+        m_datei = tk.Menu(menubar, tearoff=0)
+        m_datei.add_command(label="Öffnen", command=self.menu_open)
+        m_datei.add_separator()
+        m_datei.add_command(label="Beenden", command=self.quit)
+        menubar.add_cascade(label="Datei", menu=m_datei)
+
+        m_entries = tk.Menu(menubar, tearoff=0)
+        m_entries.add_command(label="Material hinzufügen", command=self.menu_add_inventory)
+        m_entries.add_command(label="Member hinzufügen", command=self.menu_add_member)
+        menubar.add_cascade(label="Einträge", menu=m_entries)
+
+        m_psacheck = tk.Menu(menubar, tearoff=0)
+        m_psacheck.add_command(label="Fahrzeuge", command=lambda: self.placeholder_dialog("PSA Check Fahrzeuge"))
+        m_psacheck.add_command(label="Member", command=lambda: self.placeholder_dialog("PSA Check Member"))
+        m_psacheck.add_separator()
+        m_psacheck.add_command(label="PSA Soll-Liste", command=lambda: self.placeholder_dialog("PSA Soll-Liste"))
+        menubar.add_cascade(label="PSA-Check", menu=m_psacheck)
+
+        m_print = tk.Menu(menubar, tearoff=0)
+        m_print.add_command(label="Fahrzeuge", command=lambda: self.placeholder_dialog("Drucken Fahrzeuge"))
+        m_print.add_command(label="Member", command=self.open_print_dialog)
+        menubar.add_cascade(label="Drucken", menu=m_print)
+
+        m_settings = tk.Menu(menubar, tearoff=0)
+        m_settings.add_command(label="Farben PSA-Check", command=self.menu_settings)
+        m_settings.add_separator()
+        m_settings.add_command(label="Info", command=self.menu_help)
+        menubar.add_cascade(label="Einstellung", menu=m_settings)
+
+        self.config(menu=menubar)
+
+    def placeholder_dialog(self, title: str):
+        top = tk.Toplevel(self)
+        top.title(title)
+        ttk.Label(top, text="Wird später implementiert.").pack(padx=20, pady=20)
+        ttk.Button(top, text="OK", command=top.destroy).pack(pady=(0, 20))
+
+    def build_statusbar(self):
+        self.status_var = tk.StringVar(value="Keine Datenbank geöffnet. Datei → Öffnen…")
+        bar = ttk.Label(self, textvariable=self.status_var, anchor=tk.W)
+        bar.pack(side=tk.BOTTOM, fill=tk.X)
+
+    # -------------------------
+    # Actions
+    # -------------------------
+    def menu_open(self):
+        path = filedialog.asksaveasfilename(
+            title="Datenbank öffnen/neu anlegen",
+            defaultextension=".db",
+            filetypes=[("SQLite DB", "*.db"), ("Alle Dateien", "*.*")],
+            initialfile=(os.path.basename(self.settings.last_db_path) if self.settings.last_db_path else "inventory.db"),
+        )
+        if not path:
+            return
+        try:
+            self.open_db(path)
+            self.settings.last_db_path = path
+            self.settings.save()
+        except Exception as ex:
+            messagebox.showerror("Fehler", f"DB konnte nicht geöffnet/angelegt werden: {ex}")
+
+    def open_db(self, path: str):
+        self.db.connect(path)
+        self.refresh_all()
+        from settings.constants import APP_TITLE as TITLE  # avoid import cycle
+        self.title(f"{TITLE} — {os.path.abspath(path)}")
+
+    def menu_add_inventory(self):
+        from app.ui.dialogs.inventory import AddInventoryDialog
+        if not self.db.conn:
+            messagebox.showinfo("Hinweis", "Bitte zuerst eine Datenbank öffnen.")
+            return
+        AddInventoryDialog(self, self.db, on_saved=self.refresh_inventory)
+
+    def menu_add_member(self):
+        from app.ui.dialogs.member import AddMemberDialog
+        if not self.db.conn:
+            messagebox.showinfo("Hinweis", "Bitte zuerst eine Datenbank öffnen.")
+            return
+        AddMemberDialog(self, self.db, on_saved=self.refresh_member)
+
+    def open_print_dialog(self):
+        PrintExportDialog(self, self.db)
+
+    def menu_settings(self):
+        ColorRulesDialog(self, self.settings, on_save=self.refresh_inventory)
+
+    def menu_help(self):
+        AboutDialog(self)
+
+    def refresh_inventory(self):
+        self.inventory_tab.rebuild_color_tags()
+        self.inventory_tab.refresh()
+
+    def refresh_member(self):
+        self.member_tab.refresh()
+
+    def refresh_all(self):
+        self.refresh_inventory()
+        self.refresh_member()
+
+if __name__ == "__main__":
+    from app.core.utils import create_folder
+    create_folder("./output")
+    app = App()
+    app.mainloop()
