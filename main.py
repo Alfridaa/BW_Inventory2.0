@@ -7,9 +7,7 @@ from settings.app_settings import AppSettings
 from app.db.database import Database
 from app.ui.tabs.inventory_tab import InventoryTab
 from app.ui.tabs.member_tab import MemberTab
-from app.ui.tabs.psa_calc_tab import PSACalcTab
 from app.ui.tabs.jacken_tab import JackenTab
-from app.ui.tabs.rental_tab import RentalTab
 from app.ui.dialogs.color_rules import ColorRulesDialog
 from app.ui.dialogs.about import AboutDialog
 from app.ui.dialogs.print_member import PrintExportDialog
@@ -32,15 +30,11 @@ class App(tk.Tk):
 
         self.inventory_tab = InventoryTab(self.notebook, self.db, self.settings)
         self.member_tab = MemberTab(self.notebook, self.db)
-        self.psa_calc_tab = PSACalcTab(self.notebook, self.db)
         self.jacken_tab = JackenTab(self.notebook, self.db)
-        self.rental_tab = RentalTab(self.notebook, self.db)
 
         self.notebook.add(self.inventory_tab, text="Inventory")
         self.notebook.add(self.member_tab, text="Member")
-        self.notebook.add(self.psa_calc_tab, text="PSA Bedarf")
         self.notebook.add(self.jacken_tab, text="Jacken")
-        self.notebook.add(self.rental_tab, text="Verleih")
         
 
         if self.settings.last_db_path:
