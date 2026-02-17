@@ -3,12 +3,50 @@ from tkinter import ttk, messagebox
 from settings.constants import INVENTORY_COLUMNS, ID_LIST_FILE
 from app.core.utils import today_str, parse_date, delete_file, append_line, generate_next_valid_id_item
 
+
+def _build_member_name_map(db) -> dict[str, str]:
+    member_name_by_id: dict[str, str] = {}
+    for member in db.get_members_basic():
+        first_name = (member.get("first_name") or "").strip()
+        last_name = (member.get("last_name") or "").strip()
+        full_name = f"{first_name} {last_name}".strip()
+        if not full_name:
+            continue
+
+        member_id = str(member.get("ID") or "").strip()
+        if not member_id:
+            continue
+
+        member_name_by_id[member_id] = full_name
+        if member_id.startswith("/"):
+            member_name_by_id[member_id[1:]] = full_name
+        else:
+            member_name_by_id[f"/{member_id}"] = full_name
+    return member_name_by_id
+
+
+def _format_location_option(location: str, member_name_by_id: dict[str, str]) -> str:
+    location_str = str(location).strip()
+    if location_str.startswith("/NR"):
+        member_name = member_name_by_id.get(location_str) or member_name_by_id.get(location_str[1:])
+        if member_name:
+            return f"{location_str} ({member_name})"
+    return location_str
+
+
+def _location_value_from_display(value: str) -> str:
+    cleaned = value.strip()
+    if cleaned.startswith("/NR") and " (" in cleaned and cleaned.endswith(")"):
+        return cleaned.split(" (", 1)[0].strip()
+    return cleaned
+
 class AddInventoryDialog(tk.Toplevel):
     def __init__(self, master, db, on_saved=None):
         super().__init__(master)
         self.title("Material hinzufügen")
         self.db = db
         self.on_saved = on_saved
+        self.member_name_by_id = _build_member_name_map(db)
         self.geometry("720x520")
         self.transient(master)
         self.grab_set()
@@ -25,6 +63,8 @@ class AddInventoryDialog(tk.Toplevel):
             dd = ttk.Combobox(form, state="readonly")
             try:
                 dd_values = self.db.get_distinct_values("inventory", col)
+                if col == "location":
+                    dd_values = [_format_location_option(v, self.member_name_by_id) for v in dd_values]
                 dd["values"] = [""] + dd_values
             except Exception:
                 dd["values"] = [""]
@@ -75,7 +115,10 @@ class AddInventoryDialog(tk.Toplevel):
         newv = pair["new"].get().strip()
         if newv:
             return newv
-        return pair["combo"].get().strip()
+        selected = pair["combo"].get().strip()
+        if col == "location":
+            return _location_value_from_display(selected)
+        return selected
 
     def save(self):
         for col in ("manufactury_date", "check_date"):
@@ -125,6 +168,7 @@ class EditInventoryDialog(tk.Toplevel):
         self.db = db
         self.rec_id = record.get("ID")
         self.on_saved = on_saved
+        self.member_name_by_id = _build_member_name_map(db)
         self.geometry("720x520")
         self.transient(master)
         self.grab_set()
@@ -142,6 +186,8 @@ class EditInventoryDialog(tk.Toplevel):
             dd = ttk.Combobox(form, state="readonly")
             try:
                 dd_values = self.db.get_distinct_values("inventory", col)
+                if col == "location":
+                    dd_values = [_format_location_option(v, self.member_name_by_id) for v in dd_values]
                 dd["values"] = [""] + dd_values
             except Exception:
                 dd["values"] = [""]
@@ -184,7 +230,10 @@ class EditInventoryDialog(tk.Toplevel):
         newv = pair["new"].get().strip()
         if newv:
             return newv
-        return pair["combo"].get().strip()
+        selected = pair["combo"].get().strip()
+        if col == "location":
+            return _location_value_from_display(selected)
+        return selected
 
     def save(self):
         for col in ("manufactury_date", "check_date"):
