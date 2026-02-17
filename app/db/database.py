@@ -69,6 +69,13 @@ class Database:
             location TEXT
         );""")
 
+        # ➕ vehicle
+        cur.execute("""CREATE TABLE IF NOT EXISTS vehicle (
+            vehicle TEXT PRIMARY KEY,
+            location TEXT,
+            database_soll TEXT
+        );""")
+
         # Migration: alte Tabelle "jacken" -> "kleidung"
         cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='jacken'")
         old_table_exists = cur.fetchone() is not None
@@ -176,6 +183,34 @@ class Database:
         prefix = "set_vehicle_"
         table_names = self.list_tables_with_prefix(prefix)
         return [name[len(prefix):] for name in table_names]
+
+    def list_vehicle_set_tables(self) -> list[str]:
+        return self.list_tables_with_prefix("set_vehicle_")
+
+    def fetch_vehicle_rows(self) -> list[sqlite3.Row]:
+        assert self.conn is not None
+        cur = self.conn.cursor()
+        cur.execute("SELECT vehicle, location, database_soll FROM vehicle ORDER BY vehicle")
+        return cur.fetchall()
+
+    def upsert_vehicle(self, vehicle: str, location: str, database_soll: str | None):
+        assert self.conn is not None
+        self.conn.execute(
+            """
+            INSERT INTO vehicle (vehicle, location, database_soll)
+            VALUES (?, ?, ?)
+            ON CONFLICT(vehicle) DO UPDATE SET
+                location = excluded.location,
+                database_soll = excluded.database_soll
+            """,
+            (vehicle, location, database_soll or None),
+        )
+        self.conn.commit()
+
+    def delete_vehicle(self, vehicle: str):
+        assert self.conn is not None
+        self.conn.execute("DELETE FROM vehicle WHERE vehicle = ?", (vehicle,))
+        self.conn.commit()
 
     def create_vehicle_set_table(self, table_name: str):
         assert self.conn is not None
