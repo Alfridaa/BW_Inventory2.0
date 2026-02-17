@@ -21,6 +21,7 @@ class InventoryTab(ttk.Frame):
         self.db = db
         self.settings = settings
         self.columns = [c for c, _ in INVENTORY_COLUMNS]
+        self.member_name_by_id: dict[str, str] = {}
         self.table = FilterTable(self, self.columns, bool_columns={"psa_check"})
         self.table.pack(fill=tk.BOTH, expand=True)
         self.table.bind("<<FilterChanged>>", lambda e: self.refresh())
@@ -197,6 +198,7 @@ class InventoryTab(ttk.Frame):
     def refresh(self):
         if not self.db.conn:
             return
+        self.member_name_by_id = self._build_member_name_map()
         rows = self.db.fetch_all("inventory")
         filters = self.table.get_filters()
         self.table.clear()
@@ -265,8 +267,23 @@ class InventoryTab(ttk.Frame):
         on_saved_cb = getattr(top, "refresh_inventory", None) if hasattr(top, "refresh_inventory") else None
         EditInventoryDialog(self, self.db, dict(row), on_saved=on_saved_cb)
 
-    @staticmethod
-    def format_value(col: str, v):
+    def _build_member_name_map(self) -> dict[str, str]:
+        member_name_by_id: dict[str, str] = {}
+        for member in self.db.get_members_basic():
+            first_name = (member.get("first_name") or "").strip()
+            last_name = (member.get("last_name") or "").strip()
+            full_name = f"{first_name} {last_name}".strip()
+            if full_name:
+                member_name_by_id[str(member["ID"])] = full_name
+        return member_name_by_id
+
+    def format_value(self, col: str, v):
         if col in ("psa_check",):
             return "Ja" if str(v) == "1" else "Nein"
+        if col == "location" and v not in (None, ""):
+            location = str(v).strip()
+            lookup_id = location[1:] if location.startswith("/") else location
+            member_name = self.member_name_by_id.get(lookup_id)
+            if member_name:
+                return member_name
         return v if v is not None else ""
