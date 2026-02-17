@@ -62,8 +62,16 @@ class App(tk.Tk):
         m_entries.add_command(label="Material hinzufügen", command=self.menu_add_inventory)
         m_entries.add_command(label="Einsatzkräfte hinzufügen", command=self.menu_add_member)
         m_entries.add_command(label="Kleidung hinzufügen", command=self.menu_add_kleidung)
+<<<<<<< codex/update-fahrzeugverwaltung-dialog-functionality
         m_entries.add_command(label="Lagerorte", command=self.menu_manage_locations)
+=======
+        m_entries.add_command(label="Fahrzeuge verwalten", command=self.menu_manage_vehicles)
+>>>>>>> main
         menubar.add_cascade(label="Einträge", menu=m_entries)
+
+        m_vehicle = tk.Menu(menubar, tearoff=0)
+        m_vehicle.add_command(label="Fahrzeuge verwalten", command=self.menu_manage_vehicles)
+        menubar.add_cascade(label="Fahrzeuge", menu=m_vehicle)
 
         m_psacheck = tk.Menu(menubar, tearoff=0)
         m_psacheck.add_command(label="Fahrzeuge", command=lambda: self.placeholder_dialog("PSA Check Fahrzeuge"))
@@ -79,8 +87,12 @@ class App(tk.Tk):
         menubar.add_cascade(label="PSA Soll-Liste", menu=m_psa_soll_liste)
 
         m_print = tk.Menu(menubar, tearoff=0)
-        m_print.add_command(label="Fahrzeuge", command=lambda: self.placeholder_dialog("Drucken Fahrzeuge"))
-        m_print.add_command(label="Einsatzkräfte", command=self.open_print_dialog)
+        m_print.add_command(label="Listen Fahrzeuge", command=lambda: self.placeholder_dialog("Drucken Fahrzeuge"))
+        m_print.add_separator()
+        m_print.add_command(label="Ausgabe Einsatzkräfte", command=self.open_print_dialog)
+        m_print.add_command(label="Rückgabe Einsatzkräfte", command=lambda: self.placeholder_dialog("Drucken Rückgabe Einsatzkräfte"))
+        m_print.add_separator()
+        m_print.add_command(label="PSA-Check Listen", command=lambda: self.placeholder_dialog("Drucken PSA-Check Listen"))
         menubar.add_cascade(label="Drucken", menu=m_print)
 
         m_settings = tk.Menu(menubar, tearoff=0)
@@ -148,11 +160,19 @@ class App(tk.Tk):
             return
         AddKleidungDialog(self, self.db, on_saved=self.refresh_kleidung)
 
+<<<<<<< codex/update-fahrzeugverwaltung-dialog-functionality
     def menu_manage_locations(self):
         if not self.db.conn:
             messagebox.showinfo("Hinweis", "Bitte zuerst eine Datenbank öffnen.")
             return
         LocationManageDialog(self, self.db)
+=======
+    def menu_manage_vehicles(self):
+        if not self.db.conn:
+            messagebox.showinfo("Hinweis", "Bitte zuerst eine Datenbank öffnen.")
+            return
+        VehicleManageDialog(self, self.db)
+>>>>>>> main
 
     def menu_psa_soll_liste_fahrzeuge(self):
         from app.ui.dialogs.psa_soll_liste import VehicleSetDialog

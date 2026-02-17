@@ -19,11 +19,13 @@ class AddMemberDialog(tk.Toplevel):
         form.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         ttk.Label(form, text="first_name").grid(row=0, column=0, sticky="w", pady=3)
-        self.e_first = ttk.Entry(form)
+        self.e_first = ttk.Combobox(form, state="normal")
+        self.e_first["values"] = [""] + self._get_member_distinct_values("first_name")
         self.e_first.grid(row=0, column=1, sticky="we", padx=4)
 
         ttk.Label(form, text="last_name").grid(row=1, column=0, sticky="w", pady=3)
-        self.e_last = ttk.Entry(form)
+        self.e_last = ttk.Combobox(form, state="normal")
+        self.e_last["values"] = [""] + self._get_member_distinct_values("last_name")
         self.e_last.grid(row=1, column=1, sticky="we", padx=4)
 
         self.bool_vars: dict[str, tk.IntVar] = {}
@@ -42,6 +44,12 @@ class AddMemberDialog(tk.Toplevel):
         btns.pack(fill=tk.X, pady=10)
         ttk.Button(btns, text="Speichern", command=self.save).pack(side=tk.RIGHT, padx=6)
         ttk.Button(btns, text="Abbrechen", command=self.destroy).pack(side=tk.RIGHT)
+
+    def _get_member_distinct_values(self, column: str) -> list[str]:
+        try:
+            return self.db.get_distinct_values("member", column)
+        except Exception:
+            return []
 
     def save(self):
         first = self.e_first.get().strip()
@@ -85,12 +93,14 @@ class EditMemberDialog(tk.Toplevel):
         form.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         ttk.Label(form, text="first_name").grid(row=0, column=0, sticky="w", pady=3)
-        self.e_first = ttk.Entry(form)
+        self.e_first = ttk.Combobox(form, state="normal")
+        self.e_first["values"] = [""] + self._get_member_distinct_values("first_name")
         self.e_first.grid(row=0, column=1, sticky="we", padx=4)
         self.e_first.insert(0, str(record.get("first_name") or ""))
 
         ttk.Label(form, text="last_name").grid(row=1, column=0, sticky="w", pady=3)
-        self.e_last = ttk.Entry(form)
+        self.e_last = ttk.Combobox(form, state="normal")
+        self.e_last["values"] = [""] + self._get_member_distinct_values("last_name")
         self.e_last.grid(row=1, column=1, sticky="we", padx=4)
         self.e_last.insert(0, str(record.get("last_name") or ""))
 
@@ -111,6 +121,12 @@ class EditMemberDialog(tk.Toplevel):
         ttk.Button(btns, text="Abbrechen", command=self.destroy).pack(side=tk.RIGHT, padx=6)
         ttk.Button(btns, text="Löschen", command=self.delete).pack(side=tk.RIGHT, padx=6)
         ttk.Button(btns, text="Speichern", command=self.save).pack(side=tk.RIGHT, padx=6)
+
+    def _get_member_distinct_values(self, column: str) -> list[str]:
+        try:
+            return self.db.get_distinct_values("member", column)
+        except Exception:
+            return []
 
     def save(self):
         first = self.e_first.get().strip()
