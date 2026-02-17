@@ -61,6 +61,7 @@ class App(tk.Tk):
         m_entries.add_command(label="Material hinzufügen", command=self.menu_add_inventory)
         m_entries.add_command(label="Einsatzkräfte hinzufügen", command=self.menu_add_member)
         m_entries.add_command(label="Kleidung hinzufügen", command=self.menu_add_kleidung)
+        m_entries.add_command(label="Fahzeuge verwalten", command=lambda: self.placeholder_dialog("Fahrzeuge verwalten"))
         menubar.add_cascade(label="Einträge", menu=m_entries)
 
         m_psacheck = tk.Menu(menubar, tearoff=0)
