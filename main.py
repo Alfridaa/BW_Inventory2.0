@@ -11,6 +11,7 @@ from app.ui.tabs.jacken_tab import KleidungTab
 from app.ui.dialogs.color_rules import ColorRulesDialog
 from app.ui.dialogs.about import AboutDialog
 from app.ui.dialogs.print_member import PrintExportDialog
+from app.ui.dialogs.location import LocationManageDialog
 from app.core.utils import create_folder
 
 class App(tk.Tk):
@@ -61,7 +62,7 @@ class App(tk.Tk):
         m_entries.add_command(label="Material hinzufügen", command=self.menu_add_inventory)
         m_entries.add_command(label="Einsatzkräfte hinzufügen", command=self.menu_add_member)
         m_entries.add_command(label="Kleidung hinzufügen", command=self.menu_add_kleidung)
-        m_entries.add_command(label="Fahzeuge verwalten", command=lambda: self.placeholder_dialog("Fahrzeuge verwalten"))
+        m_entries.add_command(label="Lagerorte", command=self.menu_manage_locations)
         menubar.add_cascade(label="Einträge", menu=m_entries)
 
         m_psacheck = tk.Menu(menubar, tearoff=0)
@@ -146,6 +147,12 @@ class App(tk.Tk):
             messagebox.showinfo("Hinweis", "Bitte zuerst eine Datenbank öffnen.")
             return
         AddKleidungDialog(self, self.db, on_saved=self.refresh_kleidung)
+
+    def menu_manage_locations(self):
+        if not self.db.conn:
+            messagebox.showinfo("Hinweis", "Bitte zuerst eine Datenbank öffnen.")
+            return
+        LocationManageDialog(self, self.db)
 
     def menu_psa_soll_liste_fahrzeuge(self):
         from app.ui.dialogs.psa_soll_liste import VehicleSetDialog
