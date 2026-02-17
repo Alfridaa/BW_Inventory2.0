@@ -1,7 +1,7 @@
 # -----------------------------
 # App metadata
 # -----------------------------
-APP_TITLE = "Bergwacht Inventory Manager"
+APP_TITLE = "Bergwacht Material Manager"
 APP_VERSION = "Version 0.0.2"  # +psa/kleidung
 
 SETTINGS_FILE = "settings.cfg"

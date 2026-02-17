@@ -8,7 +8,7 @@ class AddMemberDialog(tk.Toplevel):
 
     def __init__(self, master, db, on_saved=None):
         super().__init__(master)
-        self.title("Member hinzufügen")
+        self.title("Einsatzkräfte hinzufügen")
         self.db = db
         self.on_saved = on_saved
         self.geometry("520x420")
@@ -73,7 +73,7 @@ class EditMemberDialog(tk.Toplevel):
 
     def __init__(self, master, db, record: dict, on_saved=None):
         super().__init__(master)
-        self.title(f"Member bearbeiten — ID {record.get('ID')}")
+        self.title(f"Einsatzkraft bearbeiten — ID {record.get('ID')}")
         self.db = db
         self.rec_id = record.get("ID")
         self.on_saved = on_saved
