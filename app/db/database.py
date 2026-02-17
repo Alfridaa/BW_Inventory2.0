@@ -69,6 +69,30 @@ class Database:
             location TEXT
         );""")
 
+<<<<<<< codex/update-fahrzeugverwaltung-dialog-functionality
+        # ➕ location
+        cur.execute("""CREATE TABLE IF NOT EXISTS location (
+            location TEXT PRIMARY KEY,
+            vehicle TEXT,
+            database_soll TEXT
+        );""")
+
+        # Migration: alte Tabelle "vehicle" -> "location"
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='vehicle'")
+        old_vehicle_exists = cur.fetchone() is not None
+        if old_vehicle_exists:
+            cur.execute("SELECT COUNT(*) FROM location")
+            location_count = cur.fetchone()[0]
+            if location_count == 0:
+                cur.execute(
+                    """
+                    INSERT INTO location (location, vehicle, database_soll)
+                    SELECT location, vehicle, database_soll FROM vehicle
+                    WHERE location IS NOT NULL AND location <> ''
+                    """
+                )
+
+=======
         # ➕ vehicle
         cur.execute("""CREATE TABLE IF NOT EXISTS vehicle (
             vehicle TEXT PRIMARY KEY,
@@ -76,6 +100,7 @@ class Database:
             database_soll TEXT
         );""")
 
+>>>>>>> main
         # Migration: alte Tabelle "jacken" -> "kleidung"
         cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='jacken'")
         old_table_exists = cur.fetchone() is not None
@@ -184,6 +209,34 @@ class Database:
         table_names = self.list_tables_with_prefix(prefix)
         return [name[len(prefix):] for name in table_names]
 
+<<<<<<< codex/update-fahrzeugverwaltung-dialog-functionality
+    def list_location_set_tables(self) -> list[str]:
+        return self.list_tables_with_prefix("set_vehicle_")
+
+    def fetch_location_rows(self) -> list[sqlite3.Row]:
+        assert self.conn is not None
+        cur = self.conn.cursor()
+        cur.execute("SELECT location, vehicle, database_soll FROM location ORDER BY location")
+        return cur.fetchall()
+
+    def upsert_location(self, location: str, vehicle: str, database_soll: str | None):
+        assert self.conn is not None
+        self.conn.execute(
+            """
+            INSERT INTO location (location, vehicle, database_soll)
+            VALUES (?, ?, ?)
+            ON CONFLICT(location) DO UPDATE SET
+                vehicle = excluded.vehicle,
+                database_soll = excluded.database_soll
+            """,
+            (location, vehicle or None, database_soll or None),
+        )
+        self.conn.commit()
+
+    def delete_location(self, location: str):
+        assert self.conn is not None
+        self.conn.execute("DELETE FROM location WHERE location = ?", (location,))
+=======
     def list_vehicle_set_tables(self) -> list[str]:
         return self.list_tables_with_prefix("set_vehicle_")
 
@@ -210,6 +263,7 @@ class Database:
     def delete_vehicle(self, vehicle: str):
         assert self.conn is not None
         self.conn.execute("DELETE FROM vehicle WHERE vehicle = ?", (vehicle,))
+>>>>>>> main
         self.conn.commit()
 
     def create_vehicle_set_table(self, table_name: str):
