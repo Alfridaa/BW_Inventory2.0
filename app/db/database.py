@@ -1,4 +1,5 @@
 import os
+import re
 import sqlite3
 from settings.constants import INVENTORY_COLUMNS, MEMBER_COLUMNS
 
@@ -148,6 +149,31 @@ class Database:
         cur.execute("SELECT ID FROM member ORDER BY ID")
         rows = cur.fetchall()
         return [row[0] for row in rows]
+
+
+    def list_tables_with_prefix(self, prefix: str) -> list[str]:
+        assert self.conn is not None
+        cur = self.conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE ? ORDER BY name", (f"{prefix}%",))
+        rows = cur.fetchall()
+        return [row[0] for row in rows]
+
+    def list_vehicle_sets(self) -> list[str]:
+        prefix = "set_vehicle_"
+        table_names = self.list_tables_with_prefix(prefix)
+        return [name[len(prefix):] for name in table_names]
+
+    def create_vehicle_set_table(self, table_name: str):
+        assert self.conn is not None
+        if not re.fullmatch(r"\w+", table_name):
+            raise ValueError("Ungültiger Tabellenname")
+        self.conn.execute(f"""CREATE TABLE IF NOT EXISTS {table_name} (
+            product_type TEXT,
+            property_1 TEXT,
+            property_2 TEXT,
+            count INTEGER
+        );""")
+        self.conn.commit()
 
     def commit(self):
         assert self.conn is not None
