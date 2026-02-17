@@ -85,5 +85,5 @@ class KleidungTab(ttk.Frame):
                 if not member_name:
                     member_name = self.member_name_by_id.get(location[1:])
                 if member_name:
-                    return member_name
+                    return f"{location} ({member_name})"
         return v if v is not None else ""
