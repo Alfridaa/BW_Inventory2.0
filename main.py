@@ -72,7 +72,11 @@ class App(tk.Tk):
         m_psacheck.add_command(label="Fahrzeuge", command=lambda: self.placeholder_dialog("PSA Check Fahrzeuge"))
         m_psacheck.add_command(label="Member", command=lambda: self.placeholder_dialog("PSA Check Member"))
         m_psacheck.add_separator()
-        m_psacheck.add_command(label="PSA Soll-Liste", command=self.menu_psa_soll_liste)
+
+        m_psa_soll_liste = tk.Menu(m_psacheck, tearoff=0)
+        m_psa_soll_liste.add_command(label="Fahrzeuge", command=self.menu_psa_soll_liste_fahrzeuge)
+        m_psa_soll_liste.add_command(label="Einsatzkräfte", command=self.menu_psa_soll_liste_einsatzkraefte)
+        m_psacheck.add_cascade(label="PSA Soll-Liste", menu=m_psa_soll_liste)
         menubar.add_cascade(label="PSA-Check", menu=m_psacheck)
 
         m_print = tk.Menu(menubar, tearoff=0)
@@ -139,9 +143,16 @@ class App(tk.Tk):
         AddMemberDialog(self, self.db, on_saved=self.refresh_member)
 
 
-    def menu_psa_soll_liste(self):
-        from app.ui.dialogs.psa_soll_liste import PSASollListDialog
-        PSASollListDialog(self, self.db)
+    def menu_psa_soll_liste_fahrzeuge(self):
+        from app.ui.dialogs.psa_soll_liste import VehicleSetDialog
+        if not self.db.conn:
+            messagebox.showinfo("Hinweis", "Bitte zuerst eine Datenbank öffnen.")
+            return
+        VehicleSetDialog(self, self.db)
+
+    def menu_psa_soll_liste_einsatzkraefte(self):
+        from app.ui.dialogs.psa_soll_liste import PlaceholderAbortDialog
+        PlaceholderAbortDialog(self, "PSA Soll-Liste Einsatzkräfte", "Wird später implementiert.")
 
     def open_print_dialog(self):
         PrintExportDialog(self, self.db)
