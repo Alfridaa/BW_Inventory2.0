@@ -7,7 +7,7 @@ from settings.app_settings import AppSettings
 from app.db.database import Database
 from app.ui.tabs.inventory_tab import InventoryTab
 from app.ui.tabs.member_tab import MemberTab
-from app.ui.tabs.jacken_tab import JackenTab
+from app.ui.tabs.jacken_tab import KleidungTab
 from app.ui.dialogs.color_rules import ColorRulesDialog
 from app.ui.dialogs.about import AboutDialog
 from app.ui.dialogs.print_member import PrintExportDialog
@@ -30,11 +30,11 @@ class App(tk.Tk):
 
         self.inventory_tab = InventoryTab(self.notebook, self.db, self.settings)
         self.member_tab = MemberTab(self.notebook, self.db)
-        self.jacken_tab = JackenTab(self.notebook, self.db)
+        self.kleidung_tab = KleidungTab(self.notebook, self.db)
 
         self.notebook.add(self.inventory_tab, text="Inventory")
         self.notebook.add(self.member_tab, text="Member")
-        self.notebook.add(self.jacken_tab, text="Jacken")
+        self.notebook.add(self.kleidung_tab, text="Kleidung")
         
 
         if self.settings.last_db_path:
@@ -60,6 +60,7 @@ class App(tk.Tk):
         m_entries = tk.Menu(menubar, tearoff=0)
         m_entries.add_command(label="Material hinzufügen", command=self.menu_add_inventory)
         m_entries.add_command(label="Member hinzufügen", command=self.menu_add_member)
+        m_entries.add_command(label="Kleidung hinzufügen", command=self.menu_add_kleidung)
         menubar.add_cascade(label="Einträge", menu=m_entries)
 
         m_psacheck = tk.Menu(menubar, tearoff=0)
@@ -138,6 +139,12 @@ class App(tk.Tk):
             return
         AddMemberDialog(self, self.db, on_saved=self.refresh_member)
 
+    def menu_add_kleidung(self):
+        from app.ui.dialogs.kleidung import AddKleidungDialog
+        if not self.db.conn:
+            messagebox.showinfo("Hinweis", "Bitte zuerst eine Datenbank öffnen.")
+            return
+        AddKleidungDialog(self, self.db, on_saved=self.refresh_kleidung)
 
     def menu_psa_soll_liste_fahrzeuge(self):
         from app.ui.dialogs.psa_soll_liste import VehicleSetDialog
@@ -166,9 +173,13 @@ class App(tk.Tk):
     def refresh_member(self):
         self.member_tab.refresh()
 
+    def refresh_kleidung(self):
+        self.kleidung_tab.refresh()
+
     def refresh_all(self):
         self.refresh_inventory()
         self.refresh_member()
+        self.refresh_kleidung()
 
 if __name__ == "__main__":
     from app.core.utils import create_folder

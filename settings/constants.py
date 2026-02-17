@@ -2,7 +2,7 @@
 # App metadata
 # -----------------------------
 APP_TITLE = "Bergwacht Inventory Manager"
-APP_VERSION = "Version 0.0.2"  # +psa/jacken
+APP_VERSION = "Version 0.0.2"  # +psa/kleidung
 
 SETTINGS_FILE = "settings.cfg"
 ID_LIST_FILE = "./output/id_list.csv"
@@ -57,8 +57,8 @@ PSA_COLUMNS = [
     ("EL", "INTEGER")
 ]
 
-# jacken
-JACKEN_COLUMNS = [
+# kleidung
+KLEIDUNG_COLUMNS = [
     ("type", "TEXT"),
     ("gender", "TEXT"),
     ("size", "TEXT"),
@@ -71,4 +71,4 @@ JACKEN_COLUMNS = [
 INVENTORY_COLNAMES = [c for c, _ in INVENTORY_COLUMNS]
 MEMBER_COLNAMES    = [c for c, _ in MEMBER_COLUMNS]
 PSA_COLNAMES       = [c for c, _ in PSA_COLUMNS]
-JACKEN_COLNAMES    = [c for c, _ in JACKEN_COLUMNS]
+KLEIDUNG_COLNAMES  = [c for c, _ in KLEIDUNG_COLUMNS]

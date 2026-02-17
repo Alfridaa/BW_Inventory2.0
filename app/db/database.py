@@ -1,7 +1,7 @@
 import os
 import re
 import sqlite3
-from settings.constants import INVENTORY_COLUMNS, MEMBER_COLUMNS
+from settings.constants import INVENTORY_COLUMNS, MEMBER_COLUMNS, KLEIDUNG_COLUMNS
 
 class Database:
     def __init__(self):
@@ -61,13 +61,27 @@ class Database:
             LR INTEGER,
             EL INTEGER
         );""")
-        # ➕ jacken
-        cur.execute("""CREATE TABLE IF NOT EXISTS jacken (
+        # ➕ kleidung
+        cur.execute("""CREATE TABLE IF NOT EXISTS kleidung (
             type TEXT,
             gender TEXT,
             size TEXT,
             location TEXT
         );""")
+
+        # Migration: alte Tabelle "jacken" -> "kleidung"
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='jacken'")
+        old_table_exists = cur.fetchone() is not None
+        if old_table_exists:
+            cur.execute("SELECT COUNT(*) FROM kleidung")
+            kleidung_count = cur.fetchone()[0]
+            if kleidung_count == 0:
+                cur.execute(
+                    """
+                    INSERT INTO kleidung (type, gender, size, location)
+                    SELECT type, gender, size, location FROM jacken
+                    """
+                )
         self.conn.commit()
 
 
@@ -291,21 +305,28 @@ class Database:
         self.conn.execute("DELETE FROM psa WHERE type = ?", (type_val,))
         self.conn.commit()
 
-    # ---- Jacken ----
-    def fetch_all_jacken(self) -> list[sqlite3.Row]:
+    # ---- Kleidung ----
+    def fetch_all_kleidung(self) -> list[sqlite3.Row]:
         assert self.conn is not None
         cur = self.conn.cursor()
-        cur.execute("SELECT * FROM jacken")
+        cur.execute("SELECT rowid, type, gender, size, location FROM kleidung ORDER BY type, gender, size, location")
         return cur.fetchall()
 
-    def insert_jacke(self, record: dict):
+    def insert_kleidung(self, record: dict):
         assert self.conn is not None
-        cols = ["type","gender","size","location"]
+        cols = [c for c, _ in KLEIDUNG_COLUMNS]
         placeholders = ",".join(["?"] * len(cols))
         values = [record.get(c) for c in cols]
-        self.conn.execute(f"INSERT INTO jacken ({','.join(cols)}) VALUES ({placeholders})", values)
+        self.conn.execute(f"INSERT INTO kleidung ({','.join(cols)}) VALUES ({placeholders})", values)
 
-    def delete_jacken_by_type(self, type_val: str):
+    def update_kleidung(self, row_id: int, record: dict):
         assert self.conn is not None
-        self.conn.execute("DELETE FROM jacken WHERE type = ?", (type_val,))
+        cols = [c for c, _ in KLEIDUNG_COLUMNS]
+        set_clause = ",".join([f"{c}=?" for c in cols])
+        values = [record.get(c) for c in cols] + [row_id]
+        self.conn.execute(f"UPDATE kleidung SET {set_clause} WHERE rowid = ?", values)
+
+    def delete_kleidung(self, row_id: int):
+        assert self.conn is not None
+        self.conn.execute("DELETE FROM kleidung WHERE rowid = ?", (row_id,))
         self.conn.commit()
