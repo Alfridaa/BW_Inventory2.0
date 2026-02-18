@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import os
 from typing import List, Dict, Iterable, Sequence, Tuple, Optional
+import xml.etree.ElementTree as ET
 from fpdf import FPDF
 from settings.constants import MEMBER_COLUMNS
 from settings.constants import INVENTORY_COLUMNS
@@ -37,7 +38,8 @@ class _PDF(FPDF):
             logo_h = title_h + 1  # nur minimal größer als die Überschrift
             logo_w = 0
             logo_x = self.l_margin + title_w + 4
-            self.image(self.logo_path, x=logo_x, y=title_y, w=logo_w, h=logo_h)
+            image_path = _prepare_logo_path(self.logo_path)
+            self.image(image_path, x=logo_x, y=title_y, w=logo_w, h=logo_h)
 
         self.ln(20)
 
@@ -59,6 +61,32 @@ def _ensure_output_dir(path: str):
     out_dir = os.path.dirname(os.path.abspath(path))
     if out_dir and not os.path.exists(out_dir):
         os.makedirs(out_dir, exist_ok=True)
+
+
+def _prepare_logo_path(path: str) -> str:
+    """
+    Bereitet ein SVG-Logo für fpdf vor.
+    Inkscape-Metadaten wie <namedview> werden entfernt, damit keine
+    unnötigen Parser-Warnungen beim PDF-Export erscheinen.
+    """
+    if not path.lower().endswith(".svg"):
+        return path
+
+    try:
+        tree = ET.parse(path)
+        root = tree.getroot()
+
+        # SVG-Namespaces beibehalten; nur inkscape:sodipodi namedview entfernen
+        for child in list(root):
+            if child.tag.endswith("namedview"):
+                root.remove(child)
+
+        clean_path = f"{path}.fpdf_clean.svg"
+        tree.write(clean_path, encoding="utf-8", xml_declaration=True)
+        return clean_path
+    except Exception:
+        # Fallback: Originaldatei verwenden, falls Parsing fehlschlägt
+        return path
 
 
 def _calc_col_widths(pdf: FPDF, headers: List[str], rows: Iterable[RowType],
