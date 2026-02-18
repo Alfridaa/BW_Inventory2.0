@@ -76,51 +76,6 @@ class Database:
             database_soll TEXT
         );""")
 
-        # Migration: location.vehicle -> location.set_name
-        cur.execute("PRAGMA table_info(location)")
-        location_columns = {row[1] for row in cur.fetchall()}
-        if "set_name" not in location_columns:
-            cur.execute("ALTER TABLE location ADD COLUMN set_name TEXT")
-            location_columns.add("set_name")
-        if "vehicle" in location_columns:
-            cur.execute(
-                """
-                UPDATE location
-                SET set_name = COALESCE(set_name, vehicle)
-                WHERE vehicle IS NOT NULL AND vehicle <> ''
-                """
-            )
-
-        # Migration: alte Tabelle "vehicle" -> "location"
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='vehicle'")
-        old_vehicle_exists = cur.fetchone() is not None
-        if old_vehicle_exists:
-            cur.execute("SELECT COUNT(*) FROM location")
-            location_count = cur.fetchone()[0]
-            if location_count == 0:
-                cur.execute(
-                    """
-                    INSERT INTO location (location, set_name, database_soll)
-                    SELECT location, vehicle, database_soll FROM vehicle
-                    WHERE location IS NOT NULL AND location <> ''
-                    """
-                )
-
-        # Migration: alte Tabelle "jacken" -> "kleidung"
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='jacken'")
-        old_table_exists = cur.fetchone() is not None
-        if old_table_exists:
-            cur.execute("SELECT COUNT(*) FROM kleidung")
-            kleidung_count = cur.fetchone()[0]
-            if kleidung_count == 0:
-                cur.execute(
-                    """
-                    INSERT INTO kleidung (type, gender, size, location)
-                    SELECT type, gender, size, location FROM jacken
-                    """
-                )
-        self.conn.commit()
-
 
     def fetch_all(self, table: str) -> list[sqlite3.Row]:
         assert self.conn is not None
