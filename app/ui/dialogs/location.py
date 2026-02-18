@@ -67,11 +67,12 @@ class LocationManageDialog(tk.Toplevel):
         }
 
         if self.location_combo is not None:
-            self.location_combo["values"] = sorted(self.location_rows_by_key.keys())
+            # Lagerort-Auswahl immer direkt aus der DB-Spalte `location` laden.
+            self.location_combo["values"] = self.db.fetch_location_names()
 
         if self.set_name_combo is not None:
-            set_names = sorted({r["set_name"] for r in self.location_rows_by_key.values() if r["set_name"]})
-            self.set_name_combo["values"] = set_names
+            # Setname-Auswahl immer direkt aus der DB-Spalte `set_name` laden.
+            self.set_name_combo["values"] = self.db.fetch_location_set_names()
 
         if self.database_combo is not None:
             table_names = self.db.list_location_set_tables()
