@@ -76,7 +76,7 @@ class App(tk.Tk):
         menubar.add_cascade(label="PSA-Check", menu=m_psacheck)
 
         m_psa_soll_liste = tk.Menu(m_psacheck, tearoff=0)
-        m_psa_soll_liste.add_command(label="Check Fahrzeuge", command=lambda: self.placeholder_dialog("PSA Bedarf Berechnung"))
+        m_psa_soll_liste.add_command(label="Check Fahrzeuge", command=self.menu_psa_soll_liste_check_fahrzeuge)
         m_psa_soll_liste.add_command(label="Check Einsatzkräfte", command=lambda: self.placeholder_dialog("PSA Bedarf Berechnung"))
         m_psa_soll_liste.add_separator()
         m_psa_soll_liste.add_command(label="Fahrzeuge anpassen", command=self.menu_psa_soll_liste_fahrzeuge)
@@ -173,6 +173,13 @@ class App(tk.Tk):
     def menu_psa_soll_liste_einsatzkraefte(self):
         from app.ui.dialogs.psa_soll_liste import PlaceholderAbortDialog
         PlaceholderAbortDialog(self, "PSA Soll-Liste Einsatzkräfte", "Wird später implementiert.")
+
+    def menu_psa_soll_liste_check_fahrzeuge(self):
+        from app.ui.dialogs.psa_soll_liste import VehicleCheckDialog
+        if not self.db.conn:
+            messagebox.showinfo("Hinweis", "Bitte zuerst eine Datenbank öffnen.")
+            return
+        VehicleCheckDialog(self, self.db)
 
     def open_print_dialog(self):
         PrintExportDialog(self, self.db)
