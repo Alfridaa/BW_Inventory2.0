@@ -294,6 +294,72 @@ class Database:
         )
         return [row[0] for row in cur.fetchall()]
 
+    def get_inventory_distinct_by_filters(
+        self,
+        column: str,
+        location: str | None = None,
+        product_type: str | None = None,
+        property_1: str | None = None,
+    ) -> list[str]:
+        assert self.conn is not None
+        allowed_columns = {"location", "product_type", "property_1", "property_2"}
+        if column not in allowed_columns:
+            raise ValueError("Ungültige Spalte")
+
+        query = [
+            f"SELECT DISTINCT {column} FROM inventory",
+            f"WHERE {column} IS NOT NULL AND TRIM({column}) <> ''",
+        ]
+        params: list[str] = []
+
+        if location:
+            query.append("AND location = ?")
+            params.append(location)
+        if product_type:
+            query.append("AND product_type = ?")
+            params.append(product_type)
+        if property_1:
+            query.append("AND property_1 = ?")
+            params.append(property_1)
+
+        query.append(f"ORDER BY {column}")
+        cur = self.conn.cursor()
+        cur.execute(" ".join(query), tuple(params))
+        return [row[0] for row in cur.fetchall()]
+
+    def fetch_inventory_for_psa_check(
+        self,
+        location: str,
+        product_type: str,
+        property_1: str,
+        property_2: str,
+    ) -> list[sqlite3.Row]:
+        assert self.conn is not None
+        cur = self.conn.cursor()
+        cur.execute(
+            """
+            SELECT ID, product_type, property_1, property_2, serial_number, check_date, psa_check
+            FROM inventory
+            WHERE location = ?
+              AND product_type = ?
+              AND property_1 = ?
+              AND property_2 = ?
+            ORDER BY ID
+            """,
+            (location, product_type, property_1, property_2),
+        )
+        return cur.fetchall()
+
+    def update_inventory_psa_check_dates(self, ids: list[str], check_date: str):
+        assert self.conn is not None
+        if not ids:
+            return
+        self.conn.executemany(
+            "UPDATE inventory SET check_date = ?, psa_check = 1 WHERE ID = ?",
+            [(check_date, item_id) for item_id in ids],
+        )
+        self.conn.commit()
+
     def commit(self):
         assert self.conn is not None
         self.conn.commit()

@@ -12,6 +12,7 @@ from app.ui.dialogs.color_rules import ColorRulesDialog
 from app.ui.dialogs.about import AboutDialog
 from app.ui.dialogs.print_member import PrintExportDialog
 from app.ui.dialogs.location import LocationManageDialog
+from app.ui.dialogs.psa_check_depot import DepotPsaCheckDialog
 from app.core.utils import create_folder
 
 class App(tk.Tk):
@@ -72,7 +73,7 @@ class App(tk.Tk):
         m_psacheck = tk.Menu(menubar, tearoff=0)
         m_psacheck.add_command(label="Fahrzeuge", command=lambda: self.placeholder_dialog("PSA Check Fahrzeuge"))
         m_psacheck.add_command(label="Einsatzkräfte", command=lambda: self.placeholder_dialog("PSA Check Einsatzkräfte"))
-        m_psacheck.add_command(label="Depot", command=lambda: self.placeholder_dialog("PSA Check Depot"))
+        m_psacheck.add_command(label="Lagerort", command=self.menu_psa_check_depot)
         menubar.add_cascade(label="PSA-Check", menu=m_psacheck)
 
         m_psa_soll_liste = tk.Menu(m_psacheck, tearoff=0)
@@ -173,6 +174,12 @@ class App(tk.Tk):
     def menu_psa_soll_liste_einsatzkraefte(self):
         from app.ui.dialogs.psa_soll_liste import PlaceholderAbortDialog
         PlaceholderAbortDialog(self, "PSA Soll-Liste Einsatzkräfte", "Wird später implementiert.")
+
+    def menu_psa_check_depot(self):
+        if not self.db.conn:
+            messagebox.showinfo("Hinweis", "Bitte zuerst eine Datenbank öffnen.")
+            return
+        DepotPsaCheckDialog(self, self.db, on_saved=self.refresh_inventory)
 
     def open_print_dialog(self):
         PrintExportDialog(self, self.db)
