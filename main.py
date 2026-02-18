@@ -72,6 +72,7 @@ class App(tk.Tk):
         m_psacheck = tk.Menu(menubar, tearoff=0)
         m_psacheck.add_command(label="Fahrzeuge", command=lambda: self.placeholder_dialog("PSA Check Fahrzeuge"))
         m_psacheck.add_command(label="Einsatzkräfte", command=lambda: self.placeholder_dialog("PSA Check Einsatzkräfte"))
+        m_psacheck.add_command(label="Depot", command=lambda: self.placeholder_dialog("PSA Check Depot"))
         menubar.add_cascade(label="PSA-Check", menu=m_psacheck)
 
         m_psa_soll_liste = tk.Menu(m_psacheck, tearoff=0)
