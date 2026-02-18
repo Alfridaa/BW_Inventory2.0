@@ -69,6 +69,29 @@ class FilterTable(ttk.Frame):
         self.tree.bind("<ButtonRelease-1>", self._sync_filter_widths, add="+")
         self.after(0, self._sync_filter_widths)
 
+    def autosize_columns(self, *, min_width: int = 80, max_width: int = 500, padding: int = 24):
+        """Passe Spaltenbreiten an Inhalt + Header an.
+
+        Wird von mehreren Tabs beim Laden der Daten aufgerufen.
+        """
+        if not self.columns:
+            return
+
+        measure_font = tkfont.nametofont("TkDefaultFont")
+        heading_font_name = ttk.Style(self).lookup("Treeview.Heading", "font")
+        heading_font = tkfont.nametofont(heading_font_name) if heading_font_name else measure_font
+
+        for col in self.columns:
+            width = heading_font.measure(str(col)) + padding
+            for item in self.tree.get_children():
+                value = self.tree.set(item, col)
+                width = max(width, measure_font.measure(str(value)) + padding)
+
+            width = max(min_width, min(width, max_width))
+            self.tree.column(col, width=width)
+
+        self._sync_filter_widths()
+
     def _on_filter_change(self, var: tk.StringVar, clear_btn: ttk.Button):
         if var.get().strip():
             clear_btn.state(["!disabled"])
