@@ -65,9 +65,9 @@ class App(tk.Tk):
         
         menubar.add_cascade(label="Einträge", menu=m_entries)
 
-        m_vehicle = tk.Menu(menubar, tearoff=0)
-        m_entries.add_command(label="Lagerorte", command=self.menu_manage_locations)
-        menubar.add_cascade(label="Fahrzeuge", menu=m_vehicle)
+        m_locations = tk.Menu(menubar, tearoff=0)
+        m_locations.add_command(label="Lagerorte verwalten", command=self.menu_manage_locations)
+        menubar.add_cascade(label="Lagerorte", menu=m_locations)
 
         m_psacheck = tk.Menu(menubar, tearoff=0)
         m_psacheck.add_command(label="Fahrzeuge", command=lambda: self.placeholder_dialog("PSA Check Fahrzeuge"))
