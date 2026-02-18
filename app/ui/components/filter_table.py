@@ -8,6 +8,7 @@ class FilterTable(ttk.Frame):
         self.columns = columns
         self.bool_columns = bool_columns or set()
         self.filter_vars: dict[str, tk.StringVar] = {}
+        self._filter_entries: dict[str, ttk.Entry] = {}
 
         self.filt_frame = ttk.Frame(self)
         self.filt_frame.pack(fill=tk.X)
@@ -18,7 +19,7 @@ class FilterTable(ttk.Frame):
             lbl.grid(row=0, column=j, sticky="we", padx=2, pady=(4, 0))
 
             entry_wrap = ttk.Frame(self.filt_frame)
-            entry_wrap.grid(row=1, column=j, sticky="we", padx=1, pady=(0, 4))
+            entry_wrap.grid(row=1, column=j, sticky="we", padx=2, pady=(0, 4))
             entry_wrap.grid_columnconfigure(0, weight=1)
 
             var = tk.StringVar()
@@ -26,21 +27,14 @@ class FilterTable(ttk.Frame):
             ent.grid(row=0, column=0, sticky="we")
             ent.bind("<KeyRelease>", lambda e: self.event_generate("<<FilterChanged>>"))
 
-            clear_btn = tk.Button(
-                entry_wrap,
-                text="×",
-                width=1,
-                padx=0,
-                pady=0,
-                relief=tk.GROOVE,
-                command=lambda v=var, e=ent: self._clear_filter(v, e),
-            )
-            clear_btn.grid(row=0, column=1, padx=(1, 0))
-            clear_btn.configure(state=tk.DISABLED)
+            clear_btn = ttk.Button(entry_wrap, text="✕", width=2, command=lambda v=var, e=ent: self._clear_filter(v, e))
+            clear_btn.grid(row=0, column=1, padx=(2, 0))
+            clear_btn.state(["disabled"])
 
             var.trace_add("write", lambda *_args, v=var, b=clear_btn: self._on_filter_change(v, b))
             self.filter_vars[col] = var
-            self.filt_frame.grid_columnconfigure(j, weight=0, minsize=10)
+            self._filter_entries[col] = ent
+            self.filt_frame.grid_columnconfigure(j, weight=0, minsize=120)
 
         # Treeview
         self.tree = ttk.Treeview(self, columns=self.columns, show="headings")
@@ -61,11 +55,11 @@ class FilterTable(ttk.Frame):
         self.tree.bind("<ButtonRelease-1>", self._sync_filter_widths, add="+")
         self.after(0, self._sync_filter_widths)
 
-    def _on_filter_change(self, var: tk.StringVar, clear_btn):
+    def _on_filter_change(self, var: tk.StringVar, clear_btn: ttk.Button):
         if var.get().strip():
-            clear_btn.configure(state=tk.NORMAL)
+            clear_btn.state(["!disabled"])
         else:
-            clear_btn.configure(state=tk.DISABLED)
+            clear_btn.state(["disabled"])
 
     def _clear_filter(self, var: tk.StringVar, entry: ttk.Entry):
         if not var.get():
@@ -77,33 +71,7 @@ class FilterTable(ttk.Frame):
     def _sync_filter_widths(self, _event=None):
         for j, col in enumerate(self.columns):
             width = int(self.tree.column(col, option="width"))
-            self.filt_frame.grid_columnconfigure(j, minsize=max(width, 10))
-
-
-    def autosize_columns(self, *, min_width: int = 40, max_width: int = 520, extra_padding: int = 18):
-        """Passt Spaltenbreiten an Header + aktuell sichtbare Werte an."""
-        tree_font_name = self.tree.cget("font") or "TkDefaultFont"
-        heading_font_name = "TkHeadingFont"
-        try:
-            cell_font = tkfont.nametofont(tree_font_name)
-        except Exception:
-            cell_font = tkfont.nametofont("TkDefaultFont")
-        try:
-            heading_font = tkfont.nametofont(heading_font_name)
-        except Exception:
-            heading_font = cell_font
-
-        children = self.tree.get_children("")
-        for col in self.columns:
-            header_width = heading_font.measure(str(col)) + extra_padding
-            content_width = 0
-            for iid in children:
-                value = self.tree.set(iid, col)
-                content_width = max(content_width, cell_font.measure(str(value)) + extra_padding)
-            width = max(header_width, content_width, min_width)
-            self.tree.column(col, width=min(width, max_width), minwidth=min_width)
-
-        self._sync_filter_widths()
+            self.filt_frame.grid_columnconfigure(j, minsize=max(width, 40))
 
     def get_filters(self) -> dict:
         return {k: v.get().strip() for k, v in self.filter_vars.items() if v.get().strip()}
