@@ -1,6 +1,7 @@
 import os
 import re
 import sqlite3
+from datetime import date
 from settings.constants import INVENTORY_COLUMNS, MEMBER_COLUMNS, KLEIDUNG_COLUMNS
 
 class Database:
@@ -14,6 +15,7 @@ class Database:
         self.conn.row_factory = sqlite3.Row
         self.path = path
         self.ensure_schema()
+        self.reset_expired_psa_checks()
 
     def ensure_schema(self):
         assert self.conn is not None
@@ -367,6 +369,26 @@ class Database:
         self.conn.executemany(
             "UPDATE inventory SET check_date = ?, psa_check = 1 WHERE ID = ?",
             [(check_date, item_id) for item_id in ids],
+        )
+        self.conn.commit()
+
+    def reset_expired_psa_checks(self):
+        """
+        Setzt `psa_check` auf 0, wenn das `check_date`-Jahr in der Vergangenheit liegt.
+        Tag und Monat werden dabei absichtlich ignoriert.
+        """
+        assert self.conn is not None
+        current_year = date.today().year
+        self.conn.execute(
+            """
+            UPDATE inventory
+            SET psa_check = 0
+            WHERE COALESCE(psa_check, 0) = 1
+              AND check_date IS NOT NULL
+              AND TRIM(check_date) <> ''
+              AND CAST(strftime('%Y', check_date) AS INTEGER) < ?
+            """,
+            (current_year,),
         )
         self.conn.commit()
 
