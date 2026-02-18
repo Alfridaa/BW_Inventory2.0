@@ -223,6 +223,28 @@ class Database:
         cur.execute("SELECT location, set_name, database_soll FROM location ORDER BY location")
         return cur.fetchall()
 
+    def fetch_location_names(self) -> list[str]:
+        """Liefert alle vorhandenen Lagerorte aus der Spalte `location`."""
+        assert self.conn is not None
+        cur = self.conn.cursor()
+        cur.execute(
+            "SELECT DISTINCT location FROM location "
+            "WHERE location IS NOT NULL AND TRIM(location) <> '' "
+            "ORDER BY location"
+        )
+        return [row[0] for row in cur.fetchall()]
+
+    def fetch_location_set_names(self) -> list[str]:
+        """Liefert alle vorhandenen Setnamen aus der Spalte `set_name`."""
+        assert self.conn is not None
+        cur = self.conn.cursor()
+        cur.execute(
+            "SELECT DISTINCT set_name FROM location "
+            "WHERE set_name IS NOT NULL AND TRIM(set_name) <> '' "
+            "ORDER BY set_name"
+        )
+        return [row[0] for row in cur.fetchall()]
+
     def upsert_location(self, location: str, set_name: str, database_soll: str | None):
         assert self.conn is not None
         self.conn.execute(
