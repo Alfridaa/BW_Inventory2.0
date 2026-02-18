@@ -15,11 +15,11 @@ class LocationManageDialog(tk.Toplevel):
         self.grab_set()
 
         self.location_var = tk.StringVar()
-        self.vehicle_var = tk.StringVar()
+        self.set_name_var = tk.StringVar()
         self.database_var = tk.StringVar()
 
         self.location_combo: ttk.Combobox | None = None
-        self.vehicle_combo: ttk.Combobox | None = None
+        self.set_name_combo: ttk.Combobox | None = None
         self.database_combo: ttk.Combobox | None = None
 
         self.location_rows_by_key: dict[str, dict] = {}
@@ -37,9 +37,9 @@ class LocationManageDialog(tk.Toplevel):
         self.location_combo.bind("<<ComboboxSelected>>", self._on_location_selected)
         self.location_combo.bind("<FocusOut>", self._on_location_selected)
 
-        ttk.Label(frame, text="Zusatz").grid(row=1, column=0, sticky="w")
-        self.vehicle_combo = ttk.Combobox(frame, textvariable=self.vehicle_var, state="normal", width=36)
-        self.vehicle_combo.grid(row=1, column=1, pady=(0, 8), sticky="ew")
+        ttk.Label(frame, text="Setname").grid(row=1, column=0, sticky="w")
+        self.set_name_combo = ttk.Combobox(frame, textvariable=self.set_name_var, state="normal", width=36)
+        self.set_name_combo.grid(row=1, column=1, pady=(0, 8), sticky="ew")
 
         ttk.Label(frame, text="PSA Soll-Datenbank").grid(row=2, column=0, sticky="w")
         self.database_combo = ttk.Combobox(frame, textvariable=self.database_var, state="normal", width=36)
@@ -60,7 +60,7 @@ class LocationManageDialog(tk.Toplevel):
         rows = self.db.fetch_location_rows()
         self.location_rows_by_key = {
             row["location"]: {
-                "vehicle": row["vehicle"] or "",
+                "set_name": row["set_name"] or "",
                 "database_soll": row["database_soll"] or "",
             }
             for row in rows
@@ -69,9 +69,9 @@ class LocationManageDialog(tk.Toplevel):
         if self.location_combo is not None:
             self.location_combo["values"] = sorted(self.location_rows_by_key.keys())
 
-        if self.vehicle_combo is not None:
-            vehicles = sorted({r["vehicle"] for r in self.location_rows_by_key.values() if r["vehicle"]})
-            self.vehicle_combo["values"] = vehicles
+        if self.set_name_combo is not None:
+            set_names = sorted({r["set_name"] for r in self.location_rows_by_key.values() if r["set_name"]})
+            self.set_name_combo["values"] = set_names
 
         if self.database_combo is not None:
             table_names = self.db.list_location_set_tables()
@@ -83,7 +83,7 @@ class LocationManageDialog(tk.Toplevel):
         row = self.location_rows_by_key.get(key)
         if row is None:
             return
-        self.vehicle_var.set(row["vehicle"])
+        self.set_name_var.set(row["set_name"])
         db_soll = row["database_soll"]
         if db_soll.startswith(self.PREFIX):
             db_soll = db_soll[len(self.PREFIX):]
@@ -91,7 +91,7 @@ class LocationManageDialog(tk.Toplevel):
 
     def _save(self):
         location = self.location_var.get().strip()
-        vehicle = self.vehicle_var.get().strip().lstrip("/")
+        set_name = self.set_name_var.get().strip().lstrip("/")
         db_soll_selection = self.database_var.get().strip()
 
         if not location:
@@ -107,7 +107,7 @@ class LocationManageDialog(tk.Toplevel):
             )
 
         try:
-            self.db.upsert_location(location, vehicle, database_soll)
+            self.db.upsert_location(location, set_name, database_soll)
             self._reload_values()
             self.location_var.set(location)
             messagebox.showinfo("Erfolg", "Lagerort wurde gespeichert.", parent=self)
@@ -126,7 +126,7 @@ class LocationManageDialog(tk.Toplevel):
         try:
             self.db.delete_location(location)
             self.location_var.set("")
-            self.vehicle_var.set("")
+            self.set_name_var.set("")
             self.database_var.set("")
             self._reload_values()
         except Exception as ex:
