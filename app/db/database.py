@@ -72,9 +72,24 @@ class Database:
         # ➕ location
         cur.execute("""CREATE TABLE IF NOT EXISTS location (
             location TEXT PRIMARY KEY,
-            vehicle TEXT,
+            set_name TEXT,
             database_soll TEXT
         );""")
+
+        # Migration: location.vehicle -> location.set_name
+        cur.execute("PRAGMA table_info(location)")
+        location_columns = {row[1] for row in cur.fetchall()}
+        if "set_name" not in location_columns:
+            cur.execute("ALTER TABLE location ADD COLUMN set_name TEXT")
+            location_columns.add("set_name")
+        if "vehicle" in location_columns:
+            cur.execute(
+                """
+                UPDATE location
+                SET set_name = COALESCE(set_name, vehicle)
+                WHERE vehicle IS NOT NULL AND vehicle <> ''
+                """
+            )
 
         # Migration: alte Tabelle "vehicle" -> "location"
         cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='vehicle'")
@@ -85,7 +100,7 @@ class Database:
             if location_count == 0:
                 cur.execute(
                     """
-                    INSERT INTO location (location, vehicle, database_soll)
+                    INSERT INTO location (location, set_name, database_soll)
                     SELECT location, vehicle, database_soll FROM vehicle
                     WHERE location IS NOT NULL AND location <> ''
                     """
@@ -205,20 +220,20 @@ class Database:
     def fetch_location_rows(self) -> list[sqlite3.Row]:
         assert self.conn is not None
         cur = self.conn.cursor()
-        cur.execute("SELECT location, vehicle, database_soll FROM location ORDER BY location")
+        cur.execute("SELECT location, set_name, database_soll FROM location ORDER BY location")
         return cur.fetchall()
 
-    def upsert_location(self, location: str, vehicle: str, database_soll: str | None):
+    def upsert_location(self, location: str, set_name: str, database_soll: str | None):
         assert self.conn is not None
         self.conn.execute(
             """
-            INSERT INTO location (location, vehicle, database_soll)
+            INSERT INTO location (location, set_name, database_soll)
             VALUES (?, ?, ?)
             ON CONFLICT(location) DO UPDATE SET
-                vehicle = excluded.vehicle,
+                set_name = excluded.set_name,
                 database_soll = excluded.database_soll
             """,
-            (location, vehicle or None, database_soll or None),
+            (location, set_name or None, database_soll or None),
         )
         self.conn.commit()
 
