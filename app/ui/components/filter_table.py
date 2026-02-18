@@ -10,25 +10,39 @@ class FilterTable(ttk.Frame):
         self.filter_vars: dict[str, tk.StringVar] = {}
         self._filter_entries: dict[str, ttk.Entry] = {}
 
+        style = ttk.Style(self)
+        self._filter_label_font = tkfont.nametofont("TkDefaultFont").copy()
+        self._filter_label_font.configure(size=8, weight="bold")
+        self._filter_entry_font = tkfont.nametofont("TkDefaultFont").copy()
+        self._filter_entry_font.configure(size=8)
+        style.configure("FilterTable.TEntry", font=self._filter_entry_font)
+        style.configure("FilterTable.TButton", padding=(1, 0))
+
         self.filt_frame = ttk.Frame(self)
         self.filt_frame.pack(fill=tk.X)
 
         # Header + Filter-Entries
         for j, col in enumerate(self.columns):
-            lbl = ttk.Label(self.filt_frame, text=col, font=("TkDefaultFont", 9, "bold"))
-            lbl.grid(row=0, column=j, sticky="we", padx=2, pady=(4, 0))
+            lbl = ttk.Label(self.filt_frame, text=col, font=self._filter_label_font)
+            lbl.grid(row=0, column=j, sticky="we", pady=(2, 0))
 
             entry_wrap = ttk.Frame(self.filt_frame)
-            entry_wrap.grid(row=1, column=j, sticky="we", padx=2, pady=(0, 4))
+            entry_wrap.grid(row=1, column=j, sticky="we", pady=(0, 2))
             entry_wrap.grid_columnconfigure(0, weight=1)
 
             var = tk.StringVar()
-            ent = ttk.Entry(entry_wrap, textvariable=var)
+            ent = ttk.Entry(entry_wrap, textvariable=var, style="FilterTable.TEntry")
             ent.grid(row=0, column=0, sticky="we")
             ent.bind("<KeyRelease>", lambda e: self.event_generate("<<FilterChanged>>"))
 
-            clear_btn = ttk.Button(entry_wrap, text="✕", width=2, command=lambda v=var, e=ent: self._clear_filter(v, e))
-            clear_btn.grid(row=0, column=1, padx=(2, 0))
+            clear_btn = ttk.Button(
+                entry_wrap,
+                text="✕",
+                width=1,
+                style="FilterTable.TButton",
+                command=lambda v=var, e=ent: self._clear_filter(v, e),
+            )
+            clear_btn.grid(row=0, column=1, padx=(1, 0))
             clear_btn.state(["disabled"])
 
             var.trace_add("write", lambda *_args, v=var, b=clear_btn: self._on_filter_change(v, b))
