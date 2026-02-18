@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import font as tkfont
 
 class FilterTable(ttk.Frame):
     def __init__(self, master, columns: list[str], *, bool_columns: set[str] | None = None):
@@ -80,7 +81,7 @@ class FilterTable(ttk.Frame):
             self.tree.delete(i)
 
     def insert_row(self, values: list, *, tags=()):
-        self.tree.insert("", tk.END, values=values, tags=tags)
+        return self.tree.insert("", tk.END, values=values, tags=tags)
 
     def add_tag_style(self, tag: str, **kw):
         self.tree.tag_configure(tag, **kw)

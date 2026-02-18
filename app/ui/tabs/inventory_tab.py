@@ -251,6 +251,8 @@ class InventoryTab(ttk.Frame):
                     # Optionales Debugging
                     print("Treeview.item set tags failed:", repr(e), "iid=", iid, "type(iid)=", type(iid))
 
+        self.table.autosize_columns()
+
     def on_double_click(self, event):
         item = self.table.tree.focus()
         if not item:

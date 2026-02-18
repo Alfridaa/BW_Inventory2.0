@@ -34,6 +34,8 @@ class MemberTab(ttk.Frame):
             values = [self.format_value(c, r[c]) for c, _ in MEMBER_COLUMNS]
             self.table.insert_row(values)
 
+        self.table.autosize_columns()
+
     def on_double_click(self, event):
         item = self.table.tree.focus()
         if not item:

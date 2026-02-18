@@ -41,6 +41,8 @@ class KleidungTab(ttk.Frame):
             self._rowid_by_item[item] = r["rowid"]
             self._row_by_item[item] = dict(r)
 
+        self.table.autosize_columns()
+
     def on_double_click(self, event):
         item = self.table.tree.focus()
         if not item:
