@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import font as tkfont
 
+
 class FilterTable(ttk.Frame):
     def __init__(self, master, columns: list[str], *, bool_columns: set[str] | None = None):
         super().__init__(master)
@@ -11,50 +12,79 @@ class FilterTable(ttk.Frame):
         self._filter_entries: dict[str, ttk.Entry] = {}
 
         style = ttk.Style(self)
+
+        # ---------- Fonts ----------
         self._filter_label_font = tkfont.nametofont("TkDefaultFont").copy()
         self._filter_label_font.configure(size=8, weight="bold")
         self._filter_entry_font = tkfont.nametofont("TkDefaultFont").copy()
         self._filter_entry_font.configure(size=8)
-        style.configure("FilterTable.TEntry", font=self._filter_entry_font)
-        style.configure("FilterTable.TButton", padding=(1, 0))
 
+        # ---------- Styles ----------
+        style.configure("FilterTable.TEntry", font=self._filter_entry_font)
+
+        # Kompakter Button-Style (ohne riesiges Theme-Padding)
+        style.layout(
+            "FilterTable.Small.TButton",
+            [
+                ("Button.border", {"sticky": "nswe", "children": [
+                    ("Button.focus", {"sticky": "nswe", "children": [
+                        ("Button.padding", {"sticky": "nswe", "children": [
+                            ("Button.label", {"sticky": "nswe"})
+                        ]})
+                    ]})
+                ]})
+            ],
+        )
+        style.configure(
+            "FilterTable.Small.TButton",
+            padding=(0, 0),
+            borderwidth=0,
+            focuscolor="",
+        )
+
+        # ---------- Filter Frame ----------
         self.filt_frame = ttk.Frame(self)
         self.filt_frame.pack(fill=tk.X)
 
-        # Header + Filter-Entries
+        # Header + Filter-Entries (JETZT: NICHT mehr an Treeview-Breite gekoppelt)
         for j, col in enumerate(self.columns):
             lbl = ttk.Label(self.filt_frame, text=col, font=self._filter_label_font)
-            lbl.grid(row=0, column=j, sticky="we", pady=(2, 0))
+            lbl.grid(row=0, column=j, sticky="w", pady=(2, 0), padx=(2, 2))
 
             entry_wrap = ttk.Frame(self.filt_frame)
-            entry_wrap.grid(row=1, column=j, sticky="we", pady=(0, 2))
-            entry_wrap.grid_columnconfigure(0, weight=1)
+            entry_wrap.grid(row=1, column=j, sticky="w", pady=(0, 2), padx=(2, 2))
 
             var = tk.StringVar()
-            ent = ttk.Entry(entry_wrap, textvariable=var, style="FilterTable.TEntry")
-            ent.grid(row=0, column=0, sticky="we")
+
+            # >>> Feste Breite in ZEICHEN (macht wirklich schmal)
+            ent = ttk.Entry(entry_wrap, textvariable=var, style="FilterTable.TEntry", width=8)
+            ent.pack(side="left")
             ent.bind("<KeyRelease>", lambda e: self.event_generate("<<FilterChanged>>"))
 
             clear_btn = ttk.Button(
                 entry_wrap,
-                text="✕",
-                width=1,
-                style="FilterTable.TButton",
+                text="✖",
+                width=2,
+                style="FilterTable.Small.TButton",
                 command=lambda v=var, e=ent: self._clear_filter(v, e),
             )
-            clear_btn.grid(row=0, column=1, padx=(1, 0))
+            clear_btn.pack(side="left", padx=(2, 0))
             clear_btn.state(["disabled"])
 
             var.trace_add("write", lambda *_args, v=var, b=clear_btn: self._on_filter_change(v, b))
+
             self.filter_vars[col] = var
             self._filter_entries[col] = ent
-            self.filt_frame.grid_columnconfigure(j, weight=0, minsize=120)
 
-        # Treeview
+            # Keine minsize/weight-Kopplung mehr
+            self.filt_frame.grid_columnconfigure(j, weight=0)
+
+        # ---------- Treeview ----------
         self.tree = ttk.Treeview(self, columns=self.columns, show="headings")
         for c in self.columns:
             self.tree.heading(c, text=c)
-            self.tree.column(c, width=120, anchor=tk.W)
+            # Tree kann normal breit sein – Filter bleibt schmal (unabhängig)
+            self.tree.column(c, width=120, minwidth=40, stretch=True, anchor=tk.W)
 
         vsb = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
         hsb = ttk.Scrollbar(self, orient="horizontal", command=self.tree.xview)
@@ -64,16 +94,10 @@ class FilterTable(ttk.Frame):
         vsb.pack(fill=tk.Y, side=tk.LEFT)
         hsb.pack(fill=tk.X)
 
-        self.tree.bind("<Configure>", self._sync_filter_widths, add="+")
-        self.tree.bind("<B1-Motion>", self._sync_filter_widths, add="+")
-        self.tree.bind("<ButtonRelease-1>", self._sync_filter_widths, add="+")
-        self.after(0, self._sync_filter_widths)
+        # >>> WICHTIG: KEIN _sync_filter_widths mehr, keine Binds mehr!
 
-    def autosize_columns(self, *, min_width: int = 80, max_width: int = 500, padding: int = 24):
-        """Passe Spaltenbreiten an Inhalt + Header an.
-
-        Wird von mehreren Tabs beim Laden der Daten aufgerufen.
-        """
+    def autosize_columns(self, *, min_width: int = 20, max_width: int = 500, padding: int = 24):
+        """Passe Spaltenbreiten an Inhalt + Header an."""
         if not self.columns:
             return
 
@@ -90,8 +114,6 @@ class FilterTable(ttk.Frame):
             width = max(min_width, min(width, max_width))
             self.tree.column(col, width=width)
 
-        self._sync_filter_widths()
-
     def _on_filter_change(self, var: tk.StringVar, clear_btn: ttk.Button):
         if var.get().strip():
             clear_btn.state(["!disabled"])
@@ -104,11 +126,6 @@ class FilterTable(ttk.Frame):
         var.set("")
         entry.focus_set()
         self.event_generate("<<FilterChanged>>")
-
-    def _sync_filter_widths(self, _event=None):
-        for j, col in enumerate(self.columns):
-            width = int(self.tree.column(col, option="width"))
-            self.filt_frame.grid_columnconfigure(j, minsize=max(width, 40))
 
     def get_filters(self) -> dict:
         return {k: v.get().strip() for k, v in self.filter_vars.items() if v.get().strip()}
