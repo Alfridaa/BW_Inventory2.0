@@ -40,6 +40,34 @@ def _location_value_from_display(value: str) -> str:
         return cleaned.split(" (", 1)[0].strip()
     return cleaned
 
+
+def _build_location_dropdown_options(db, member_name_by_id: dict[str, str]) -> list[str]:
+    options: list[str] = []
+
+    for member in db.get_members_basic():
+        member_id = str(member.get("ID") or "").strip()
+        if not member_id:
+            continue
+        normalized_member_id = member_id if member_id.startswith("/") else f"/{member_id}"
+        options.append(_format_location_option(normalized_member_id, member_name_by_id))
+
+    for row in db.fetch_location_rows():
+        location = str(row["location"] or "").strip()
+        set_name = str(row["set_name"] or "").strip()
+        if not location:
+            continue
+        options.append(f"{location}/{set_name}" if set_name else location)
+
+    # stabile Reihenfolge beibehalten, Duplikate entfernen
+    return list(dict.fromkeys(options))
+
+
+def _open_location_manage_dialog(parent, db):
+    from app.ui.dialogs.location import LocationManageDialog
+
+    dialog = LocationManageDialog(parent, db)
+    parent.wait_window(dialog)
+
 class AddInventoryDialog(tk.Toplevel):
     def __init__(self, master, db, on_saved=None):
         super().__init__(master)
@@ -62,9 +90,10 @@ class AddInventoryDialog(tk.Toplevel):
             ttk.Label(form, text=f"{col}").grid(row=row, column=0, sticky="w", pady=3)
             dd = ttk.Combobox(form, state="normal")
             try:
-                dd_values = self.db.get_distinct_values("inventory", col)
                 if col == "location":
-                    dd_values = [_format_location_option(v, self.member_name_by_id) for v in dd_values]
+                    dd_values = _build_location_dropdown_options(self.db, self.member_name_by_id)
+                else:
+                    dd_values = self.db.get_distinct_values("inventory", col)
                 dd["values"] = [""] + dd_values
             except Exception:
                 dd["values"] = [""]
@@ -72,7 +101,9 @@ class AddInventoryDialog(tk.Toplevel):
 
             self.inputs[col] = dd
 
-            if col in ("manufactury_date", "check_date"):
+            if col == "location":
+                ttk.Button(form, text="Lagerort hinzufügen", command=self.open_location_dialog).grid(row=row, column=3, padx=4)
+            elif col in ("manufactury_date", "check_date"):
                 btn = ttk.Button(form, text="Heute", command=lambda e=dd: e.delete(0, tk.END) or e.insert(0, today_str()))
                 btn.grid(row=row, column=3, padx=4)
 
@@ -104,6 +135,21 @@ class AddInventoryDialog(tk.Toplevel):
 
         for i in range(4):
             form.grid_columnconfigure(i, weight=1)
+
+    def refresh_location_dropdown(self):
+        location_input = self.inputs.get("location")
+        if not isinstance(location_input, ttk.Combobox):
+            return
+        current_value = location_input.get()
+        self.member_name_by_id = _build_member_name_map(self.db)
+        values = _build_location_dropdown_options(self.db, self.member_name_by_id)
+        location_input["values"] = [""] + values
+        if current_value:
+            location_input.set(current_value)
+
+    def open_location_dialog(self):
+        _open_location_manage_dialog(self, self.db)
+        self.refresh_location_dropdown()
 
     def resolve_value(self, col: str):
         if col == "psa_check":
@@ -178,13 +224,16 @@ class EditInventoryDialog(tk.Toplevel):
             ttk.Label(form, text=f"{col}").grid(row=row, column=0, sticky="w", pady=3)
             dd = ttk.Combobox(form, state="normal")
             try:
-                dd_values = self.db.get_distinct_values("inventory", col)
                 if col == "location":
-                    dd_values = [_format_location_option(v, self.member_name_by_id) for v in dd_values]
+                    dd_values = _build_location_dropdown_options(self.db, self.member_name_by_id)
+                else:
+                    dd_values = self.db.get_distinct_values("inventory", col)
                 dd["values"] = [""] + dd_values
             except Exception:
                 dd["values"] = [""]
             dd.grid(row=row, column=1, columnspan=2, sticky="we", padx=4)
+            if col == "location":
+                ttk.Button(form, text="Lagerort hinzufügen", command=self.open_location_dialog).grid(row=row, column=3, padx=4)
             current_val = record.get(col) if record.get(col) is not None else ""
             if col == "location":
                 current_val = _format_location_option(str(current_val), self.member_name_by_id)
@@ -214,6 +263,21 @@ class EditInventoryDialog(tk.Toplevel):
 
         for i in range(4):
             form.grid_columnconfigure(i, weight=1)
+
+    def refresh_location_dropdown(self):
+        location_input = self.inputs.get("location")
+        if not isinstance(location_input, ttk.Combobox):
+            return
+        current_value = location_input.get()
+        self.member_name_by_id = _build_member_name_map(self.db)
+        values = _build_location_dropdown_options(self.db, self.member_name_by_id)
+        location_input["values"] = [""] + values
+        if current_value:
+            location_input.set(current_value)
+
+    def open_location_dialog(self):
+        _open_location_manage_dialog(self, self.db)
+        self.refresh_location_dropdown()
 
     def resolve_value(self, col: str):
         if col == "psa_check":
