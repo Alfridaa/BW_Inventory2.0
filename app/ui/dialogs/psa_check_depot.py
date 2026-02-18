@@ -5,6 +5,8 @@ from app.core.utils import parse_date, today_str
 
 
 class DepotPsaCheckDialog(tk.Toplevel):
+    EMPTY_FILTER_VALUE = ""
+
     def __init__(self, master, db, on_saved=None):
         super().__init__(master)
         self.title("PSA Check Lagerort")
@@ -114,48 +116,34 @@ class DepotPsaCheckDialog(tk.Toplevel):
             "product_type",
             location=self.var_location.get(),
         )
-        self.cb_product_type["values"] = products
-        if products:
-            self.var_product_type.set(products[0])
+        self.cb_product_type["values"] = [self.EMPTY_FILTER_VALUE, *products]
+        self.var_product_type.set(self.EMPTY_FILTER_VALUE)
         self._on_product_type_changed()
 
     def _on_product_type_changed(self):
         self.var_property_1.set("")
         self.var_property_2.set("")
 
-        if not self.var_location.get() or not self.var_product_type.get():
-            self.cb_property_1["values"] = []
-            self.cb_property_2["values"] = []
-            self._refresh_table()
-            return
-
         prop1_values = self.db.get_inventory_distinct_by_filters(
             "property_1",
             location=self.var_location.get(),
-            product_type=self.var_product_type.get(),
+            product_type=self.var_product_type.get() or None,
         )
-        self.cb_property_1["values"] = prop1_values
-        if prop1_values:
-            self.var_property_1.set(prop1_values[0])
+        self.cb_property_1["values"] = [self.EMPTY_FILTER_VALUE, *prop1_values]
+        self.var_property_1.set(self.EMPTY_FILTER_VALUE)
         self._on_property_1_changed()
 
     def _on_property_1_changed(self):
         self.var_property_2.set("")
 
-        if not self.var_location.get() or not self.var_product_type.get() or not self.var_property_1.get():
-            self.cb_property_2["values"] = []
-            self._refresh_table()
-            return
-
         prop2_values = self.db.get_inventory_distinct_by_filters(
             "property_2",
             location=self.var_location.get(),
-            product_type=self.var_product_type.get(),
-            property_1=self.var_property_1.get(),
+            product_type=self.var_product_type.get() or None,
+            property_1=self.var_property_1.get() or None,
         )
-        self.cb_property_2["values"] = prop2_values
-        if prop2_values:
-            self.var_property_2.set(prop2_values[0])
+        self.cb_property_2["values"] = [self.EMPTY_FILTER_VALUE, *prop2_values]
+        self.var_property_2.set(self.EMPTY_FILTER_VALUE)
 
         self._refresh_table()
 
@@ -164,19 +152,14 @@ class DepotPsaCheckDialog(tk.Toplevel):
             self.tree.delete(iid)
         self.row_selected.clear()
 
-        if not all([
-            self.var_location.get(),
-            self.var_product_type.get(),
-            self.var_property_1.get(),
-            self.var_property_2.get(),
-        ]):
+        if not self.var_location.get():
             return
 
         rows = self.db.fetch_inventory_for_psa_check(
             location=self.var_location.get(),
-            product_type=self.var_product_type.get(),
-            property_1=self.var_property_1.get(),
-            property_2=self.var_property_2.get(),
+            product_type=self.var_product_type.get() or None,
+            property_1=self.var_property_1.get() or None,
+            property_2=self.var_property_2.get() or None,
         )
 
         for row in rows:

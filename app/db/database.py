@@ -330,24 +330,34 @@ class Database:
     def fetch_inventory_for_psa_check(
         self,
         location: str,
-        product_type: str,
-        property_1: str,
-        property_2: str,
+        product_type: str | None = None,
+        property_1: str | None = None,
+        property_2: str | None = None,
     ) -> list[sqlite3.Row]:
         assert self.conn is not None
-        cur = self.conn.cursor()
-        cur.execute(
+        query = [
             """
             SELECT ID, product_type, property_1, property_2, serial_number, check_date, psa_check
             FROM inventory
             WHERE location = ?
-              AND product_type = ?
-              AND property_1 = ?
-              AND property_2 = ?
-            ORDER BY ID
-            """,
-            (location, product_type, property_1, property_2),
-        )
+            """
+        ]
+        params: list[str] = [location]
+
+        if product_type:
+            query.append("AND product_type = ?")
+            params.append(product_type)
+        if property_1:
+            query.append("AND property_1 = ?")
+            params.append(property_1)
+        if property_2:
+            query.append("AND property_2 = ?")
+            params.append(property_2)
+
+        query.append("ORDER BY ID")
+
+        cur = self.conn.cursor()
+        cur.execute(" ".join(query), tuple(params))
         return cur.fetchall()
 
     def update_inventory_psa_check_dates(self, ids: list[str], check_date: str):
